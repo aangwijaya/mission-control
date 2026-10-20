@@ -1,0 +1,70 @@
+{
+  "generatedAt": 1792479829412,
+  "generatedAtWIB": "2026-10-20 14:03 WIB",
+  "source": "box-timestamps+summaries",
+  "agents": {
+    "nerd": {
+      "id": "cc6e0909-6b74-413f-b657-fa0fedd00cae",
+      "status": "Standby",
+      "lastActive": 1792475372768,
+      "lastActiveWIB": "2026-10-20 12:49 WIB",
+      "summary": "Bikin dashboard Mission Control + status otomatis",
+      "routines": 0,
+      "summarySource": "routine"
+    },
+    "makelar": {
+      "id": "4b9ac851-2160-48b6-9962-f4c9fa305133",
+      "status": "Standby",
+      "lastActive": null,
+      "lastActiveWIB": null,
+      "summary": "",
+      "routines": 0,
+      "summarySource": null
+    },
+    "alcapone": {
+      "id": "7bb34c58-76f3-4f59-ab4b-48d396e81e6e",
+      "status": "On mission",
+      "lastActive": 1792474483200,
+      "lastActiveWIB": "2026-10-20 12:34 WIB",
+      "summary": "",
+      "routines": 0,
+      "summarySource": null
+    },
+    "sisotoy": {
+      "id": "81d79561-02ac-4235-9729-52e0f6036254",
+      "status": "Standby",
+      "lastActive": 1792273150659,
+      "lastActiveWIB": "2026-10-18 04:39 WIB",
+      "summary": "",
+      "routines": 0,
+      "summarySource": null
+    },
+    "kuku": {
+      "id": "8a669244-2319-46f5-a720-dd210eaefa0b",
+      "status": "Standby",
+      "lastActive": 1792386040253,
+      "lastActiveWIB": "2026-10-19 12:00 WIB",
+      "summary": "",
+      "routines": 0,
+      "summarySource": null
+    },
+    "kurir": {
+      "id": "e805653f-bbc6-4384-8273-6250a277d2eb",
+      "status": "Standby",
+      "lastActive": 1792221050784,
+      "lastActiveWIB": "2026-10-17 14:10 WIB",
+      "summary": "",
+      "routines": 0,
+      "summarySource": null
+    },
+    "jack": {
+      "id": "edbe6eb5-9a50-4dd1-8bf2-92fc4ee79f06",
+      "status": "Standby",
+      "lastActive": null,
+      "lastActiveWIB": null,
+      "summary": "",
+      "routines": 0,
+      "summarySource": null
+    }
+  }
+}
