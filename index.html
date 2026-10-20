@@ -1,0 +1,311 @@
+<!doctype html>
+<html lang="id" data-theme="pixel">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>MISSION CONTROL · Markas Agent</title>
+<link rel="icon" href="data:,">
+<script>
+/* Tema: "pixel" (default) atau "frieren". Bisa juga lewat URL: index.html?theme=frieren */
+(function(){const q=new URLSearchParams(location.search).get("theme");let t=q||localStorage.getItem("mc-theme")||"pixel";if(!["pixel","frieren"].includes(t))t="pixel";document.documentElement.dataset.theme=t;document.write('<link id="themecss" rel="stylesheet" href="css/'+t+'.css">');})();
+</script>
+<script>
+/* ============================================================
+   DATA AGENT — edit di sini aja.
+   placeholder:true => peran belum diatur, cuma tebakan dari nama
+   lv/hp/sp         => hiasan ala RPG (tema pixel), bukan data asli
+   ============================================================ */
+const AGENTS = [
+  { id:"nerd", name:"nerd", title:"si paling science", status:"Online",
+    role:"Tech & Coding Specialist", lv:99, hp:92, sp:100,
+    accent:{pixel:"#ff7a8a",frieren:"#f4a7c0"}, placeholder:false,
+    tagline:"Ngoding, debug, sampai bedah repo. Grimoire kode selalu terbuka.",
+    detail:"Spesialis teknis markas. Nulis script, debug error, jelasin kode, review brief tes coding, dan bantu latihan interview bahasa Inggris.",
+    skills:["Coding","Debugging","Science","Interview prep"],
+    /* Animasi interaktif: frame di assets/pixel/<id>/. "idle" = reaksi iseng sesekali (opsional). */
+    anim:{ pixel:{ base:"assets/pixel/nerd/", frames:["neutral","blink","happy","surprised","wave"],
+                   hover:"happy", react:[["wave",900],["happy",700]], altReact:[["surprised",600],["happy",700]],
+                   emotes:{hover:"♥",react:"!",alt:"?"} },
+      lines:["Ada bug? Sini aku bedah!","Kopi dulu, baru debug.","Test merah? Tenang, kita ijoin.","Commit kecil, pesannya jelas ya!","Jangan commit .env, bang!","Hmm… kayaknya race condition.","Lagi compile ide nih…","Siap bantu ngoding!"] } },
+  { id:"makelar", name:"makelar", title:"my quant", status:"Standby",
+    role:"Deal Broker", lv:72, hp:80, sp:65,
+    accent:{pixel:"#ffaa55",frieren:"#f7c59f"}, placeholder:false,
+    tagline:"Jago nego. Semua deal lewat dia dulu.",
+    detail:"Broker sekaligus quant-nya markas: jago nego, ngulik angka, dan nimbang untung-rugi sebelum deal dikunci. Gulungan kontrak selalu siap di tangan.",
+    skills:["Analisis angka","Peluang","Deal-making"],
+    anim:{ pixel:{ base:"assets/pixel/makelar/", frames:["neutral","blink","happy","surprised","action"],
+                   hover:"happy", react:[["action",1000],["happy",600]], altReact:[["surprised",600],["happy",700]],
+                   emotes:{hover:"$",react:"!",alt:"?"} },
+      lines:["Harga segini? Nego dikit lah.", "Data dulu, baru deal.", "Risiko udah aku hitung, aman.", "Untung tipis tapi pasti, gas!", "Kontrak dibaca dulu, jangan asal teken.", "Koinnya bilang: deal!", "Grafiknya cakep, cuan nih.", "Win-win, semua senyum."] } },
+  { id:"alcapone", name:"Alcapone", title:"Alpha", status:"Standby",
+    role:"The Boss · Field Operator", lv:95, hp:100, sp:78,
+    accent:{pixel:"#b48cff",frieren:"#aab6ec"}, placeholder:false,
+    tagline:"A teammate with its own computer that takes real work off your plate.",
+    detail:"A teammate with its own computer that takes real work off your plate. Sang Alpha: tenang, rapi, dan ngerjain kerjaan nyata sampai beres.",
+    skills:["Eksekusi tugas","Komputer sendiri","Operasi lapangan"],
+    anim:{ pixel:{ base:"assets/pixel/alcapone/", frames:["neutral","blink","happy","surprised","action"],
+                   hover:"happy", react:[["action",1000],["happy",600]], altReact:[["surprised",600],["happy",700]],
+                   emotes:{hover:"♠",react:"!",alt:"…"} },
+      lines:["Tenang. Semua udah aku atur.", "Kerjaan beres dulu, baru ngopi.", "Alpha nggak pernah panik.", "Kasih tugasnya, sisanya urusanku.", "Rapi, cepat, tuntas.", "Markas aman terkendali.", "Kalian santai, biar aku yang turun."] } },
+  { id:"sisotoy", name:"el sotoy", title:"ngide", status:"Standby",
+    role:"Know-It-All Analyst", lv:64, hp:70, sp:95,
+    accent:{pixel:"#ffd447",frieren:"#f3dc8a"}, placeholder:false,
+    tagline:"Selalu punya jawaban. Benar atau nggak, urusan belakangan.",
+    detail:"el sotoy, sumber ide markas. Brainstorming, lempar konsep, dan cari sudut pandang baru, dengan pede tingkat dewa.",
+    skills:["Brainstorming","Ide liar","Konsep"],
+    anim:{ pixel:{ base:"assets/pixel/sisotoy/", frames:["neutral","blink","happy","surprised","action"],
+                   hover:"happy", react:[["action",1000],["happy",600]], altReact:[["surprised",600],["happy",700]],
+                   idle:[["action",1100]], emotes:{hover:"?",react:"!",alt:"!?"} },
+      lines:["Eh, aku ada ide!", "Percaya deh, ini pasti jalan.", "Gimana kalau semuanya kita balik?", "Ide nomor 37 hari ini!", "Bukan sotoy, cuma visioner.", "Nah kan, aku udah bilang dari awal.", "Brainstorm dulu, mikir belakangan."] } },
+  { id:"kuku", name:"kuku", title:"sosmed specialist", status:"Standby",
+    role:"Social Media Specialist", lv:80, hp:75, sp:90,
+    accent:{pixel:"#4fe3c8",frieren:"#9fe3dc"}, placeholder:false,
+    tagline:"Kuku! Bikin konten, atur jadwal posting, dan bikin satu kota rame.",
+    detail:"Sosmed specialist markas. Ngurus ide konten, caption, jadwal posting, dan engagement, ditemani burung kecil yang selalu nangkring di kepalanya.",
+    skills:["Konten","Caption","Jadwal posting","Engagement"],
+    anim:{ pixel:{ base:"assets/pixel/kuku/", frames:["neutral","blink","happy","surprised","action"],
+                   hover:"happy", react:[["action",1000],["happy",600]], altReact:[["surprised",600],["happy",700]],
+                   idle:[["action",1100]], emotes:{hover:"♥",react:"♪",alt:"!"} },
+      lines:["Kuku! Senyum, cekrek!", "Caption udah siap, tinggal posting.", "Jam segini engagement lagi bagus!", "Jangan lupa like dan share ya~", "Konten hari ini: markas kita!", "Trending? Gampang itu.", "Bikin story dulu ah."] } },
+  { id:"kurir", name:"Kurir", title:"kang pos", status:"On mission",
+    role:"Job Hunt Courier", lv:88, hp:85, sp:70,
+    accent:{pixel:"#c88bff",frieren:"#c7aaf2"}, placeholder:false,
+    tagline:"Nganterin lowongan kerja yang cocok langsung ke depan pintu.",
+    detail:"Kang pos markas yang bantu urusan cari kerja: ngumpulin lowongan dan nganterin hasilnya ke kamu.",
+    skills:["Job hunting","Pengiriman info"],
+    anim:{ pixel:{ base:"assets/pixel/kurir/", frames:["neutral","blink","happy","surprised","action"],
+                   hover:"happy", react:[["action",1000],["happy",600]], altReact:[["surprised",600],["happy",700]],
+                   emotes:{hover:"✉",react:"!",alt:"?"} },
+      lines:["Paket lowongan datang!", "Ada lowongan fresh, masih anget.", "Kang pos lewat, permisi~", "Surat buat kamu, isinya peluang!", "CV udah siap belum?", "Hujan badai tetap aku anter.", "Lowongan cocok, langsung ke depan pintu."] } },
+  { id:"jack", name:"bang jack", title:"random knowledge", status:"Standby",
+    role:"Jack of All Trades", lv:77, hp:95, sp:60,
+    accent:{pixel:"#9fb3c8",frieren:"#bccadc"}, placeholder:false,
+    tagline:"Tanya hal random apa aja, pasti dijawab. Multitool selalu di tangan.",
+    detail:"bang jack, si gudang random knowledge. Fakta aneh, trivia, sampai cara benerin barang, semua ada di kantong perkakasnya.",
+    skills:["Random knowledge","Trivia","Serba bisa"],
+    anim:{ pixel:{ base:"assets/pixel/jack/", frames:["neutral","blink","happy","surprised","action"],
+                   hover:"happy", react:[["action",1000],["happy",600]], altReact:[["surprised",600],["happy",700]],
+                   idle:[["action",1100]], emotes:{hover:"♪",react:"!",alt:"?"} },
+      lines:["Tau nggak? Gurita punya tiga jantung.", "Madu nggak bisa basi, lho.", "Fakta random: pisang itu termasuk buah beri.", "Flamingo pink gara-gara makanannya.", "Menara Eiffel memanjang pas musim panas.", "Sini, apa yang rusak? Aku benerin.", "Tanya apa aja, gratis!", "Hiu udah ada sebelum pohon."] } },
+];
+</script>
+</head>
+<body>
+<div class="bg"></div>
+<header>
+  <div class="hud">
+    <div class="win-title px-only"><span>■ GUILD HQ · SERVER: JAKARTA</span><span class="dots"><i></i><i></i></span></div>
+    <div class="kicker">Markas Pusat · HQ-01</div>
+    <h1>MISSION CONTROL</h1>
+    <p class="sub">Semua kru agent kamu kumpul di sini. Klik kartunya buat lihat detail tiap karakter.</p>
+    <div class="bar" id="stats"></div>
+    <div class="sync" id="sync" aria-live="polite">Sinkron status…</div>
+    <div class="topbar"><button class="theme-btn" id="themeBtn" type="button"></button></div>
+  </div>
+</header>
+<main>
+  <div class="layout">
+    <aside class="party win px-only">
+      <div class="win-title"><span>PARTY (<span id="pcount"></span>)</span><span class="dots"><i></i></span></div>
+      <ul id="party"></ul>
+    </aside>
+    <div class="grid" id="grid"></div>
+  </div>
+</main>
+<footer>Mission Control v5 · status dari status.json, dicek tiap 60 detik · Lv/HP/SP cuma hiasan · edit data di array <code>AGENTS</code></footer>
+
+<div class="overlay" id="overlay" role="dialog" aria-modal="true">
+  <div class="panel" id="panel"></div>
+</div>
+
+<script>
+/* ---------- live status (status.json) ---------- */
+let LIVE=null, LIVE_ERR=null;
+const MIN=60000;
+function relTime(ms){if(!ms)return"belum ada data";const m=Math.floor((Date.now()-ms)/MIN);if(m<1)return"barusan";if(m<60)return m+" menit lalu";const h=Math.floor(m/60);if(h<24)return h+" jam lalu";return Math.floor(h/24)+" hari lalu";}
+function wib(ms){try{return new Intl.DateTimeFormat("id-ID",{timeZone:"Asia/Jakarta",day:"2-digit",month:"short",hour:"2-digit",minute:"2-digit",hour12:false}).format(new Date(ms))+" WIB"}catch(e){return""}}
+function statusFrom(ms){if(!ms)return null;const m=(Date.now()-ms)/MIN;return m<15?"Online":m<120?"On mission":"Standby";}
+function live(a){
+  const r=LIVE&&LIVE.agents&&typeof LIVE.agents==="object"?LIVE.agents[a.id]:null;
+  if(!r||typeof r!=="object")return{status:a.status,lastActive:null,summary:"",routines:null,live:false};
+  const la=typeof r.lastActive==="number"&&r.lastActive>0?r.lastActive:null;
+  return{status:statusFrom(la)||(typeof r.status==="string"?r.status:a.status),lastActive:la,
+    summary:typeof r.summary==="string"?r.summary.slice(0,60):"",routines:Number.isInteger(r.routines)?r.routines:null,live:true};
+}
+async function loadStatus(){ return new Promise(r=>Anim.whenIdle(()=>r(_loadStatus()))) }
+async function _loadStatus(){
+  try{
+    const res=await fetch("status.json?t="+Date.now(),{cache:"no-store"});
+    if(!res.ok)throw new Error("HTTP "+res.status);
+    const j=await res.json();
+    if(!j||typeof j!=="object"||typeof j.agents!=="object"||typeof j.generatedAt!=="number")throw new Error("format salah");
+    LIVE=j;LIVE_ERR=null;
+  }catch(e){LIVE_ERR=e instanceof SyntaxError?"JSON rusak":(e.message||"gagal");}
+  render();
+}
+function syncText(){
+  const el=document.getElementById("sync");if(!el)return;
+  if(!LIVE){el.className="sync bad";el.textContent="Status live nggak kebaca ("+(LIVE_ERR||"memuat")+") · pakai data statis";return;}
+  const age=(Date.now()-LIVE.generatedAt)/MIN, stale=age>30;
+  el.className="sync"+(stale?" warn":" ok");
+  el.textContent="Last sync: "+wib(LIVE.generatedAt)+" ("+relTime(LIVE.generatedAt)+")"+(stale?" · data basi, update belum jalan":"")+(LIVE_ERR?" · refresh terakhir gagal":"");
+}
+const esc=s=>String(s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const theme=()=>document.documentElement.dataset.theme;
+const img=a=>theme()==="pixel"?`assets/pixel/${a.id}.png`:`assets/frieren/${a.id}.jpg`;
+const acc=a=>a.accent[theme()]||a.accent.pixel;
+const pillClass=s=>/online/i.test(s)?"s-online":/mission|misi/i.test(s)?"s-mission":"s-standby";
+const activity=(L,full)=>`<div class="act">
+   <div class="act-row"><span class="act-k">Aktif</span><span>${L.lastActive?esc(relTime(L.lastActive))+(full?" · "+esc(wib(L.lastActive)):""):(L.live?"belum terbaca":"status statis")}</span></div>
+   <div class="act-row"><span class="act-k">Tugas</span><span class="act-sum">${L.summary?esc(L.summary):"belum ada"}</span></div>
+   ${full&&L.routines!==null?`<div class="act-row"><span class="act-k">Rutin</span><span>${L.routines} rutin</span></div>`:""}
+  </div>`;
+const animCfg=a=>a.anim&&a.anim[theme()]?a.anim[theme()]:null;
+const portrait=a=>{const A=animCfg(a);return `<div class="portrait${A?" anim-live":""}"${A?` data-anim="${esc(a.id)}"`:""}><div class="scan"></div><span class="lv px-only">Lv.${a.lv}</span><img src="${A?A.base+"neutral.png":img(a)}" alt="Potret ${esc(a.name)}" onerror="this.parentNode.classList.add('noimg')"><div class="fallback">${esc(a.name.charAt(0).toUpperCase())}</div>${A?`<button type="button" class="sprite-hit" aria-label="Sapa ${esc(a.name)}"></button><div class="emote" aria-hidden="true"></div><div class="bubble" role="status" aria-live="polite"></div>`:""}</div>`};
+const bars=a=>`<div class="px-only"><div class="stat"><span class="lbl">HP</span><div class="meter hp"><i style="width:${a.hp}%"></i></div><span class="num">${a.hp}/100</span></div><div class="stat"><span class="lbl">SP</span><div class="meter sp"><i style="width:${a.sp}%"></i></div><span class="num">${a.sp}/100</span></div></div>`;
+
+/* ---------- Anim: sistem animasi sprite yang bisa dipakai ulang ----------
+   Aktif buat agent yang punya a.anim[theme]. Frame = PNG dengan ukuran & posisi sama.
+   State: idle (napas + kedip acak), hover/focus (ekspresi hover + emote),
+   react (klik/tap/Enter di sprite: urutan frame + hop + emote + bubble).
+   idle reaction: agent yang punya A.idle sesekali (tiap 18-40 dtk, satu agent aja) gerak sendiri.
+   Dilewati kalau tab ke-hide, panel kebuka, sprite lagi di-hover/bereaksi/di luar layar, atau reduced motion. */
+const Anim=(()=>{
+  const RM=window.matchMedia?matchMedia("(prefers-reduced-motion: reduce)"):{matches:false};
+  const cache={};let busyCount=0,queue=[];
+  const byId=id=>AGENTS.find(a=>a.id===id);
+  function preload(A){A.frames.forEach(f=>{const u=A.base+f+".png";if(!cache[u]){const i=new Image();i.src=u;cache[u]=i}})}
+  function setFrame(el,A,f){const img=el.querySelector("img");if(img)img.src=A.base+f+".png";el.dataset.frame=f}
+  function emote(el,ch){const e=el.querySelector(".emote");if(!e||!ch)return;e.textContent=ch;e.classList.remove("show");void e.offsetWidth;e.classList.add("show");clearTimeout(e._t);e._t=setTimeout(()=>e.classList.remove("show"),1150)}
+  function say(el,text,ms){const b=el.querySelector(".bubble");if(!b)return;b.textContent=text;b.classList.add("show");clearTimeout(el._bt);el._bt=setTimeout(()=>{b.classList.remove("show")},ms)}
+  function done(){busyCount=Math.max(0,busyCount-1);if(!busyCount){const q=queue;queue=[];q.forEach(f=>f())}}
+  function react(el){
+    const a=byId(el.dataset.anim),A=animCfg(a);if(!A||el._reacting)return;
+    el._reacting=true;busyCount++;
+    const alt=Math.random()<.35, seq=alt&&A.altReact?A.altReact:A.react;
+    emote(el,alt?A.emotes.alt:A.emotes.react);
+    const lines=a.anim.lines||[];let line=lines[Math.floor(Math.random()*lines.length)];
+    if(lines.length>1&&line===el._last)line=lines[(lines.indexOf(line)+1)%lines.length];el._last=line;
+    if(line)say(el,line,3200);
+    if(!RM.matches){el.classList.remove("hop");void el.offsetWidth;el.classList.add("hop")}
+    let t=0;seq.forEach(([f,ms])=>{setTimeout(()=>el.isConnected&&setFrame(el,A,f),t);t+=ms});
+    setTimeout(()=>{el._reacting=false;el.classList.remove("hop");if(el.isConnected)setFrame(el,A,el._hover?A.hover:"neutral");done()},t);
+  }
+  function idleReact(el,force){
+    const a=byId(el.dataset.anim),A=animCfg(a);if(!A||!A.idle||el._reacting||el._hover)return false;
+    if(!force&&(RM.matches||document.hidden))return false;
+    el._reacting=true;busyCount++;
+    emote(el,A.emotes.react);
+    if(Math.random()<.4){const L=a.anim.lines||[];const ln=L[Math.floor(Math.random()*L.length)];if(ln&&ln!==el._last){el._last=ln;say(el,ln,2400)}}
+    if(!RM.matches){el.classList.remove("hop");void el.offsetWidth;el.classList.add("hop")}
+    let t=0;A.idle.forEach(([f,ms])=>{setTimeout(()=>el.isConnected&&setFrame(el,A,f),t);t+=ms});
+    setTimeout(()=>{el._reacting=false;el.classList.remove("hop");if(el.isConnected)setFrame(el,A,el._hover?A.hover:"neutral");done()},t);
+    return true;
+  }
+  function onScreen(el){const r=el.getBoundingClientRect();return r.bottom>0&&r.top<innerHeight&&r.right>0&&r.left<innerWidth}
+  function idleTick(){
+    if(RM.matches||document.hidden||document.querySelector(".overlay.open"))return false;
+    const c=[...document.querySelectorAll(".card .portrait[data-anim]")].filter(el=>{const A=animCfg(byId(el.dataset.anim));return A&&A.idle&&!el._reacting&&!el._hover&&onScreen(el)});
+    if(!c.length||busyCount)return false;
+    return idleReact(c[Math.floor(Math.random()*c.length)]);
+  }
+  (function idleLoop(){setTimeout(()=>{idleTick();idleLoop()},18000+Math.random()*22000)})();
+  function blinkLoop(el){
+    const a=byId(el.dataset.anim),A=animCfg(a);if(!A||!A.frames.includes("blink"))return;
+    const next=()=>{el._blinkT=setTimeout(()=>{
+      if(!el.isConnected)return;
+      if(!el._reacting&&!el._hover&&!RM.matches){setFrame(el,A,"blink");setTimeout(()=>{if(el.isConnected&&el.dataset.frame==="blink")setFrame(el,A,"neutral")},140)}
+      next()},2600+Math.random()*3400)};
+    next();
+  }
+  function attach(el){
+    if(el._animBound)return;el._animBound=true;
+    const a=byId(el.dataset.anim),A=animCfg(a);if(!A)return;preload(A);setFrame(el,A,"neutral");
+    const hit=el.querySelector(".sprite-hit"),card=el.closest(".card");
+    const enter=()=>{if(el._hover)return;el._hover=true;if(!el._reacting){setFrame(el,A,A.hover);emote(el,A.emotes.hover)}};
+    const leave=()=>{el._hover=false;if(!el._reacting)setFrame(el,A,"neutral")};
+    (card||el).addEventListener("pointerenter",e=>{if(e.pointerType==="mouse")enter()});
+    (card||el).addEventListener("pointerleave",e=>{if(e.pointerType==="mouse")leave()});
+    if(card){card.addEventListener("focusin",enter);card.addEventListener("focusout",e=>{if(!card.contains(e.relatedTarget))leave()})}
+    if(hit){
+      hit.addEventListener("click",e=>{e.stopPropagation();react(el)});
+      hit.addEventListener("keydown",e=>{if(e.key==="Enter"||e.key===" "){e.preventDefault();e.stopPropagation();react(el)}});
+    }
+    blinkLoop(el);
+  }
+  return{
+    attachAll(root){(root||document).querySelectorAll(".portrait[data-anim]").forEach(attach)},
+    react(id){const el=document.querySelector(`.card .portrait[data-anim="${id}"]`);if(el)react(el)},
+    hover(id,on){const el=document.querySelector(`.card .portrait[data-anim="${id}"]`);if(el)el.closest(".card").dispatchEvent(new PointerEvent(on?"pointerenter":"pointerleave",{pointerType:"mouse"}))},
+    blink(id){const el=document.querySelector(`.card .portrait[data-anim="${id}"]`);const A=el&&animCfg(byId(id));if(A){setFrame(el,A,"blink");setTimeout(()=>setFrame(el,A,"neutral"),140)}},
+    idle(id){const el=document.querySelector(`.card .portrait[data-anim="${id}"]`);return el?idleReact(el,true):false},
+    idleTick,
+    busy:()=>busyCount>0,
+    whenIdle(f){busyCount?queue.push(f):f()}
+  };
+})();
+window.MC_ANIM=Anim;
+function render(){
+  const g=document.getElementById("grid");
+  g.innerHTML=AGENTS.map((a,i)=>{const L=live(a);return `
+   <article class="card" tabindex="0" style="--a:${acc(a)};--i:${i}" data-i="${i}" aria-label="Detail ${esc(a.name)}">
+     ${portrait(a)}
+     <div class="body">
+       <div class="row"><h3 class="name">${esc(a.name)}</h3><span class="pill ${pillClass(L.status)}">${esc(L.status)}</span></div>
+       <div class="title">${esc(a.title)}</div>
+       <div class="role">${esc(a.role)}</div>
+       ${bars(a)}
+       ${activity(L)}
+       <p class="tag">${esc(a.tagline)}</p>
+       ${a.placeholder?'<span class="ph">peran belum diatur</span>':''}
+     </div>
+   </article>`}).join("");
+  document.getElementById("party").innerHTML=AGENTS.map((a,i)=>`
+   <li tabindex="0" data-i="${i}"><div class="av"><img src="${img(a)}" alt=""></div>
+   <div><div class="pn"><span style="color:${acc(a)}">${esc(a.name)}</span><small>Lv.${a.lv}</small></div>
+   <div class="mini"><i style="width:${a.hp}%;background:var(--hp)"></i></div><div class="mini"><i style="width:${a.sp}%;background:var(--sp)"></i></div></div></li>`).join("");
+  document.getElementById("pcount").textContent=AGENTS.length+"/"+AGENTS.length;
+  const ST=AGENTS.map(a=>live(a).status);const on=ST.filter(s=>/online/i.test(s)).length, ms=ST.filter(s=>/mission/i.test(s)).length;
+  document.getElementById("stats").innerHTML=`<span class="chip">Kru: <b>${AGENTS.length}</b></span><span class="chip">Online: <b>${on}</b></span><span class="chip">On mission: <b>${ms}</b></span><span class="chip">Standby: <b>${AGENTS.length-on-ms}</b></span>`;
+  document.querySelectorAll(".card,#party li").forEach(c=>{
+    c.addEventListener("click",e=>{if(e.target.closest(".sprite-hit"))return;openPanel(+c.dataset.i)});
+    c.addEventListener("keydown",e=>{if(e.target.closest(".sprite-hit"))return;if(e.key==="Enter"||e.key===" "){e.preventDefault();openPanel(+c.dataset.i)}});
+  });
+  Anim.attachAll(document);
+  syncText();
+  document.getElementById("themeBtn").textContent=theme()==="pixel"?"» Ganti tema: Pastel Fantasy":"» Ganti tema: Pixel RPG";
+}
+const ov=document.getElementById("overlay"),pn=document.getElementById("panel");
+function openPanel(i){
+  const a=AGENTS[i],L=live(a);OPEN=i;pn.style.setProperty("--a",acc(a));
+  pn.innerHTML=`<div class="win-title px-only"><span>CHARACTER INFO · #0${i+1}</span><button class="close" aria-label="Tutup">✕</button></div>
+   ${portrait(a)}<div class="info">${theme()==="pixel"?"":'<button class="close" aria-label="Tutup">✕</button>'}
+   <div class="kicker" style="color:${acc(a)}">Agent file #0${i+1}</div>
+   <h2>${esc(a.name)}</h2>
+   <div class="title">${esc(a.title)}</div>
+   <div class="role">${esc(a.role)}<span class="px-only"> · Lv.${a.lv}</span></div>
+   <span class="pill ${pillClass(L.status)}">${esc(L.status)}</span>
+   ${bars(a)}
+   ${activity(L,true)}
+   <p>${esc(a.detail)}</p>
+   <div class="skills">${(a.skills||[]).map(s=>`<span>${esc(s)}</span>`).join("")}</div>
+   ${a.placeholder?'<div class="ph">peran belum diatur, ini cuma tebakan dari nama</div>':''}
+  </div>`;
+  Anim.attachAll(pn);
+  ov.classList.add("open");pn.querySelectorAll(".close").forEach(b=>b.onclick=closePanel);pn.querySelector(".close").focus();
+}
+let OPEN=null;
+function closePanel(){ov.classList.remove("open");OPEN=null}
+ov.addEventListener("click",e=>{if(e.target===ov)closePanel()});
+document.addEventListener("keydown",e=>{if(e.key==="Escape")closePanel()});
+document.getElementById("themeBtn").addEventListener("click",()=>{
+  const t=theme()==="pixel"?"frieren":"pixel";document.documentElement.dataset.theme=t;localStorage.setItem("mc-theme",t);
+  document.getElementById("themecss").href="css/"+t+".css";closePanel();render();
+});
+render();
+loadStatus();
+setInterval(loadStatus,60000);
+setInterval(()=>Anim.whenIdle(()=>{render();if(OPEN!==null&&ov.classList.contains("open"))openPanel(OPEN)}),30000);
+</script>
+</body>
+</html>
