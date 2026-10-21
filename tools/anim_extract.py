@@ -1,11 +1,12 @@
 """KAIRO pilot stage 1: key out magenta, slice each AI sheet into items by column gaps,
 nearest/mode downscale to the in-game character scale and lock to nerd's 16-colour palette."""
-import sys, json, numpy as np
+import os, sys, json, numpy as np
 from PIL import Image
 from scipy import ndimage as nd
 sys.path.insert(0, __file__.rsplit("/", 1)[0])
 from sprites_lib import key_mask, mode_downscale, outline, clean_specks
-ROOT = "/workspace/mission-control/villagemegax-anim"; RAW = f"{ROOT}/anim/raw"; OUT = f"{ROOT}/anim/items"
+ROOT = os.environ.get("VMX_ROOT") or os.path.dirname(os.path.dirname(os.path.abspath(__file__)))   # repo root (tools/..)
+RAW = f"{ROOT}/anim/raw"; OUT = f"{ROOT}/anim/items"
 P = np.asarray(Image.open(f"{ROOT}/tools/work/nerd_pal.png").convert("RGBA"))[0, :, :3].astype(int)
 PAL = Image.new("P", (1, 1)); PAL.putpalette(list(P.ravel()) + list(P[0]) * (256 - 16))
 TALL = 80   # master nerd height in px
@@ -38,7 +39,8 @@ def split_wide(fg, rs):
     return out
 
 def extract(name, scale_ref=None, thr=95, char=True, merge=12, split=False):
-    a = np.asarray(Image.open(f"{RAW}/{name}.jpg").convert("RGB"))
+    fn = next((f"{RAW}/{name}.{e}" for e in ("jpg", "png") if os.path.exists(f"{RAW}/{name}.{e}")), f"{RAW}/{name}.jpg")
+    a = np.asarray(Image.open(fn).convert("RGB"))
     fg = key_mask(a, thr)
     rs = items(a, fg, merge=merge); res = []
     if split: rs = split_wide(fg, rs)

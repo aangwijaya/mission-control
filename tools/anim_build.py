@@ -2,6 +2,7 @@
 palette, align feet (BASE) + centre, paste the master head (faces stay identical to sit/wave/blink), and build
 shared FX (beam, splash, white flash, energy orbs) tinted to each agent's accent/palette.
 Output: assets/sprites/<id>_kairo.png (one row of 64x96 cells) + assets/sprites/kairo.json
+Neo HQ diagonals (walkd/backd) are appended after the older cells, see DIAG.
 The old code-made frames stay untouched in assets/sprites/<id>.png (HUD toggle ANIM: NEW/OLD)."""
 import sys, json, re, numpy as np
 from PIL import Image
@@ -9,11 +10,12 @@ sys.path.insert(0, __file__.rsplit("/", 1)[0])
 from anim_extract import extract, down, load_pal, ROOT
 from build_poses import CUT
 from eyes2 import close_eyes
+from diag_cleanup import clean_dots
 
 CW, CH, BASE = 64, 96, 94
 OUT = f"{ROOT}/assets/sprites"
-TICKS = {"blink": 8, "idle": 9, "walk": 4, "back": 5, "tp": 3, "def": 5}
-LOOP = {"blink": True, "idle": True, "walk": True, "back": True, "tp": False, "def": False}
+TICKS = {"blink": 8, "idle": 9, "walk": 4, "back": 5, "tp": 3, "def": 5, "walkd": 4, "backd": 5}
+LOOP = {"blink": True, "idle": True, "walk": True, "back": True, "tp": False, "def": False, "walkd": True, "backd": True}
 ACCENT = dict(re.findall(r'id:"(\w+)".*?accent:"(#[0-9a-fA-F]{6})"', open(f"{ROOT}/js/agents.js").read()))
 
 def anchor_x(o):
@@ -116,6 +118,47 @@ CFG = {
                  tp=("jack_teleport_v1", [4, 5, 6]), de=("jack_defeat_v1", 0)),
 }
 
+# ---------- isometric diagonals for Neo HQ (anim/raw/<id>_walkd.png, <id>_backd.png) ----------
+# walkd = 3/4 front walking toward bottom-right, backd = 3/4 back walking toward top-right; js mirrors them for the
+# two left-hand directions. Cells are APPENDED after "def" so every older sequence keeps its cell indices.
+# (picked items, cycle order as indices into the picked list, master head pasted?)
+DIAG = {
+    "nerd":     dict(walkd=([0, 1, 2, 3, 4, 5], None, True), backd=([0, 1, 2, 3], None, False)),
+    "makelar":  dict(walkd=([0, 1, 2, 3, 4, 5], None, True), backd=([0, 1, 2, 3], None, False)),
+    "alcapone": dict(walkd=([0, 1, 2, 3, 4, 5], None, True), backd=([3, 4, 5, 6, 7], None, False)),
+    "sisotoy":  dict(walkd=([0, 1, 2, 3, 4, 5], None, True), backd=([0, 1, 2, 3], None, False)),
+    "kuku":     dict(walkd=([0, 1, 2, 3, 4, 5], None, True), backd=([0, 1, 2, 3], None, False)),
+    "kurir":    dict(walkd=([0, 1, 2, 3, 4, 5], None, True), backd=([0, 1, 2, 3], None, False)),
+    "jack":     dict(walkd=([0, 1, 2, 3, 4, 5], None, True), backd=([0, 1, 2, 3], None, False)),
+}
+
+# agents whose diagonal frames get the dot cleanup (tools/diag_cleanup.py): vertical band per sequence
+DIAG_CLEAN = {"kuku": dict(walkd=(0.30, 0.62), backd=(0.36, 0.62)), "kurir": dict(walkd=(0.30, 0.62), backd=(0.36, 0.62))}
+
+# diagonal sequences whose head (rows above `neck`, buns + bird included) is copied from frame `src` onto every frame
+BACK_HEAD = {"kuku": dict(backd=(0, 35))}
+
+def chars(name):
+    """character items of a sheet (drops specks / split leftovers narrower than 30 source px)"""
+    _, _, its = sheet(name, split=True)
+    return [j for j, it in enumerate(its) if it["x1"] - it["x0"] > 30]
+
+def add_diag(id_, add, seqs, H, hs):
+    pal = load_pal(id_)
+    for seq, (idx, order, head) in DIAG[id_].items():
+        name = f"{id_}_{seq}"; ch = chars(name)
+        out = items_scaled(name, [ch[i] for i in idx], std_h(name), H, pal, split=True)
+        if head: out = [hs(o) for o in out]
+        if seq in BACK_HEAD.get(id_, {}):                                # one 3/4-back head + bird for every frame (bob follows the body)
+            src, nb = BACK_HEAD[id_][seq]; o0 = out[src]; t0 = np.nonzero((o0[..., 3] > 0).any(1))[0].min()
+            hb = o0[t0:t0 + nb].copy(); out = [head_swap(o, hb, nb) for o in out]
+        cells = [cell(o, "torso") for o in out]
+        if id_ in DIAG_CLEAN:                                            # repaint generator-invented chest/back dots
+            yf = CUT[id_][0] + 2 if head else None                       # never touch the pasted master head
+            cells = [clean_dots(c, band=DIAG_CLEAN[id_][seq], cx=torso_cx(c), y_from=yf)[0] for c in cells]
+        add(seq, cells)
+        if order: seqs[seq] = [seqs[seq][j] for j in order]
+
 def std_h(name, idx=None):
     """standing height of a sheet = tallest character item (source px)"""
     _, _, its = sheet(name, split=True)
@@ -143,6 +186,7 @@ def build_nerd():
     de = [hs(item("nerd_defeat_v1", 0, 76, **dk)), item("nerd_defeat_v1", 1, 79, False, **dk), item("nerd_defeat_v1", 2, 80, False, **dk)]
     rings = [item("nerd_defeat_v1", 3, 40, False, **dk), item("nerd_defeat_v1", 10, 50, False, **dk), item("nerd_defeat_v1", 12, 60, False, **dk)]
     add("def", [cell(o) for o in de] + [cell(o, "box", cy=BASE - 38) for o in rings])
+    add_diag("nerd", add, seqs, MASTER.shape[0], hs)
     return frames, seqs
 
 def build_agent(id_, nerd_cells, nerd_seqs):
@@ -171,6 +215,7 @@ def build_agent(id_, nerd_cells, nerd_seqs):
     st = pick("de")[0]
     orbs = [tint_fx(nerd_cells[i], R) for i in nerd_seqs["def"][3:]]
     add("def", [cell(st), flash(cell(st), R, True), flash(cell(st), R, False)] + orbs)
+    add_diag(id_, add, seqs, H, hs)
     return frames, seqs
 
 if __name__ == "__main__":
