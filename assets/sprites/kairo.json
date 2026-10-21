@@ -1,0 +1,437 @@
+{
+ "cell": [
+  64,
+  96
+ ],
+ "base": 94,
+ "agents": {
+  "nerd": {
+   "sheet": "nerd_kairo.png",
+   "seq": {
+    "idle": [
+     0,
+     1,
+     2,
+     3
+    ],
+    "blink": [
+     4
+    ],
+    "walk": [
+     5,
+     6,
+     7,
+     8,
+     6,
+     9
+    ],
+    "back": [
+     10,
+     11,
+     12,
+     13
+    ],
+    "tp": [
+     14,
+     15,
+     16,
+     17,
+     18,
+     19,
+     20
+    ],
+    "def": [
+     21,
+     22,
+     23,
+     24,
+     25,
+     26
+    ]
+   },
+   "ticks": {
+    "blink": 8,
+    "idle": 9,
+    "walk": 4,
+    "back": 5,
+    "tp": 3,
+    "def": 5
+   },
+   "loop": {
+    "blink": true,
+    "idle": true,
+    "walk": true,
+    "back": true,
+    "tp": false,
+    "def": false
+   }
+  },
+  "makelar": {
+   "sheet": "makelar_kairo.png",
+   "seq": {
+    "idle": [
+     0,
+     1,
+     2,
+     3
+    ],
+    "blink": [
+     4
+    ],
+    "walk": [
+     5,
+     6,
+     7,
+     8,
+     9
+    ],
+    "back": [
+     10,
+     11,
+     12,
+     13
+    ],
+    "tp": [
+     14,
+     15,
+     16,
+     17,
+     18,
+     19,
+     20
+    ],
+    "def": [
+     21,
+     22,
+     23,
+     24,
+     25,
+     26
+    ]
+   },
+   "ticks": {
+    "blink": 8,
+    "idle": 9,
+    "walk": 4,
+    "back": 5,
+    "tp": 3,
+    "def": 5
+   },
+   "loop": {
+    "blink": true,
+    "idle": true,
+    "walk": true,
+    "back": true,
+    "tp": false,
+    "def": false
+   }
+  },
+  "alcapone": {
+   "sheet": "alcapone_kairo.png",
+   "seq": {
+    "idle": [
+     0,
+     1,
+     2,
+     3
+    ],
+    "blink": [
+     4
+    ],
+    "walk": [
+     5,
+     6,
+     7,
+     8,
+     9,
+     10
+    ],
+    "back": [
+     11,
+     12,
+     13,
+     14
+    ],
+    "tp": [
+     15,
+     16,
+     17,
+     18,
+     19,
+     20,
+     21
+    ],
+    "def": [
+     22,
+     23,
+     24,
+     25,
+     26,
+     27
+    ]
+   },
+   "ticks": {
+    "blink": 8,
+    "idle": 9,
+    "walk": 4,
+    "back": 5,
+    "tp": 3,
+    "def": 5
+   },
+   "loop": {
+    "blink": true,
+    "idle": true,
+    "walk": true,
+    "back": true,
+    "tp": false,
+    "def": false
+   }
+  },
+  "sisotoy": {
+   "sheet": "sisotoy_kairo.png",
+   "seq": {
+    "idle": [
+     0,
+     1,
+     2,
+     3
+    ],
+    "blink": [
+     4
+    ],
+    "walk": [
+     5,
+     6,
+     7,
+     8,
+     9,
+     10
+    ],
+    "back": [
+     11,
+     12,
+     13,
+     14
+    ],
+    "tp": [
+     15,
+     16,
+     17,
+     18,
+     19,
+     20,
+     21
+    ],
+    "def": [
+     22,
+     23,
+     24,
+     25,
+     26,
+     27
+    ]
+   },
+   "ticks": {
+    "blink": 8,
+    "idle": 9,
+    "walk": 4,
+    "back": 5,
+    "tp": 3,
+    "def": 5
+   },
+   "loop": {
+    "blink": true,
+    "idle": true,
+    "walk": true,
+    "back": true,
+    "tp": false,
+    "def": false
+   }
+  },
+  "kuku": {
+   "sheet": "kuku_kairo.png",
+   "seq": {
+    "idle": [
+     0,
+     1,
+     2,
+     3
+    ],
+    "blink": [
+     4
+    ],
+    "walk": [
+     5,
+     6,
+     7,
+     8,
+     9,
+     10
+    ],
+    "back": [
+     11,
+     12,
+     13,
+     14
+    ],
+    "tp": [
+     15,
+     16,
+     17,
+     18,
+     19,
+     20,
+     21
+    ],
+    "def": [
+     22,
+     23,
+     24,
+     25,
+     26,
+     27
+    ]
+   },
+   "ticks": {
+    "blink": 8,
+    "idle": 9,
+    "walk": 4,
+    "back": 5,
+    "tp": 3,
+    "def": 5
+   },
+   "loop": {
+    "blink": true,
+    "idle": true,
+    "walk": true,
+    "back": true,
+    "tp": false,
+    "def": false
+   }
+  },
+  "kurir": {
+   "sheet": "kurir_kairo.png",
+   "seq": {
+    "idle": [
+     0,
+     1,
+     2,
+     3
+    ],
+    "blink": [
+     4
+    ],
+    "walk": [
+     5,
+     6,
+     7,
+     8,
+     9,
+     10
+    ],
+    "back": [
+     11,
+     12,
+     13,
+     14
+    ],
+    "tp": [
+     15,
+     16,
+     17,
+     18,
+     19,
+     20,
+     21
+    ],
+    "def": [
+     22,
+     23,
+     24,
+     25,
+     26,
+     27
+    ]
+   },
+   "ticks": {
+    "blink": 8,
+    "idle": 9,
+    "walk": 4,
+    "back": 5,
+    "tp": 3,
+    "def": 5
+   },
+   "loop": {
+    "blink": true,
+    "idle": true,
+    "walk": true,
+    "back": true,
+    "tp": false,
+    "def": false
+   }
+  },
+  "jack": {
+   "sheet": "jack_kairo.png",
+   "seq": {
+    "idle": [
+     0,
+     1,
+     2,
+     3
+    ],
+    "blink": [
+     4
+    ],
+    "walk": [
+     5,
+     6,
+     7,
+     8,
+     9,
+     10
+    ],
+    "back": [
+     11,
+     12,
+     13,
+     14,
+     15,
+     16
+    ],
+    "tp": [
+     17,
+     18,
+     19,
+     20,
+     21,
+     22,
+     23
+    ],
+    "def": [
+     24,
+     25,
+     26,
+     27,
+     28,
+     29
+    ]
+   },
+   "ticks": {
+    "blink": 8,
+    "idle": 9,
+    "walk": 4,
+    "back": 5,
+    "tp": 3,
+    "def": 5
+   },
+   "loop": {
+    "blink": true,
+    "idle": true,
+    "walk": true,
+    "back": true,
+    "tp": false,
+    "def": false
+   }
+  }
+ }
+}
