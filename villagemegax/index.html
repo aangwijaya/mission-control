@@ -1,0 +1,55 @@
+<!doctype html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>MISSION CONTROL · Robot HQ 16-bit</title>
+<link rel="icon" href="data:,">
+<link rel="stylesheet" href="css/villagemegax.css">
+</head>
+<body>
+<canvas id="scene" aria-label="Markas robot pixel-art 16-bit Mission Control"></canvas>
+<div id="labels" aria-hidden="true"></div>
+
+<header class="hud win">
+  <div class="win-title"><span>◆ ROBOT HQ · 16-BIT</span><a class="back" href="../" title="Balik ke dashboard">« DASHBOARD</a></div>
+  <div class="hud-body">
+    <h1>MISSION CONTROL</h1>
+    <div class="chips" id="stats"></div>
+    <div class="sync" id="sync">Sinkron status…</div>
+    <div class="hud-links"><a href="credits.html">Credits (art orisinal AI + font)</a> · <a href="?demo=1">demo</a></div>
+  </div>
+</header>
+
+<aside class="party win" id="partyWin">
+  <div class="win-title"><span>PARTY <span id="pcount"></span></span><button type="button" class="mini-btn" id="partyToggle" aria-expanded="true" aria-controls="party">–</button></div>
+  <ul id="party"></ul>
+</aside>
+
+<div class="tools">
+  <button type="button" class="tool" id="zoomOut" title="Zoom out" aria-label="Zoom out">−</button>
+  <button type="button" class="tool" id="zoomLbl" title="Reset zoom">×1</button>
+  <button type="button" class="tool" id="zoomIn" title="Zoom in" aria-label="Zoom in">+</button>
+  <button type="button" class="tool" id="homeBtn" title="Balik ke tengah markas">⌂</button>
+  <button type="button" class="tool snd" id="muteBtn" title="Musik on/off" aria-label="Musik" aria-pressed="true"><svg viewBox="0 0 12 10" width="15" height="13" shape-rendering="crispEdges" aria-hidden="true"><path d="M0 3h3v4H0zM3 2h1v6H3zM4 1h1v8H4zM5 0h1v10H5z" fill="currentColor"/><g class="on"><path d="M7 3h1v4H7zM9 1h1v2H9zM10 3h1v4h-1zM9 7h1v2H9z" fill="currentColor"/></g><g class="off"><path d="M7 2h1v1H7zM8 3h1v1H8zM9 4h1v2H9zM10 3h1v1h-1zM11 2h1v1h-1zM8 6h1v1H8zM7 7h1v1H7zM10 6h1v1h-1zM11 7h1v1h-1z" fill="#c8102e"/></g></svg></button>
+</div>
+
+<div class="legend win">
+  <span><i class="dot s-work"></i>Kerja → konsol Command Center</span>
+  <span><i class="dot s-idle"></i>Standby → keliling / sofa inti energi / teleporter</span>
+  <span><i class="dot s-sleep"></i>Offline → ngecas di kapsul (CHG)</span>
+  <span class="hint2">Geser: pan · scroll/pinch: zoom · klik kru buat nyapa</span>
+  <a href="credits.html" class="credits-link">Credits · art orisinal (AI) + font OFL</a>
+</div>
+
+<section class="info win" id="info" role="dialog" aria-modal="false" aria-labelledby="infoName" hidden>
+  <div class="win-title"><span>CHARACTER INFO</span><button type="button" class="mini-btn" id="infoClose" aria-label="Tutup">✕</button></div>
+  <div class="info-body" id="infoBody"></div>
+</section>
+
+<noscript><p class="nojs">Markas 2D butuh JavaScript. <a href="../">Buka dashboard</a>.</p></noscript>
+<div class="err win" id="err" hidden></div>
+
+<script type="module" src="js/villagemegax.js"></script>
+</body>
+</html>

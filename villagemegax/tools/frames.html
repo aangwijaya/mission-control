@@ -1,0 +1,19 @@
+<!doctype html>
+<html lang="id"><head><meta charset="utf-8"><title>villagemegax · sprite frames</title>
+<style>@font-face{font-family:"PS2P";src:url("../../fonts/PressStart2P-Regular.ttf")}body{margin:0;background:#dfeefe;font:10px "PS2P",monospace;color:#0d2a5e}canvas{image-rendering:pixelated;display:block}</style></head>
+<body><canvas id="c"></canvas>
+<script type="module">
+// lembar frame semua kru (2x): tiap baris = 1 agent, kolom = frame dari sprites.json
+const meta = await (await fetch("../assets/sprites/sprites.json")).json();
+const ids = Object.keys(meta.agents), F = meta.frames, k = 1.2, cw = 64, ch = 96;
+const c = document.getElementById("c"); c.width = 60 + F.length * cw * k; c.height = 24 + ids.length * ch * k; const x = c.getContext("2d"); x.imageSmoothingEnabled = false;
+await document.fonts.load('8px "PS2P"');
+x.font = '8px "PS2P"'; F.forEach((f, i) => x.fillText(f, 60 + i * cw * k + 4, 14));
+for (const [r, id] of ids.entries()) {
+  const im = new Image(); im.src = `../assets/sprites/${id}.png`; await im.decode();
+  x.fillText(id, 4, 24 + r * ch * k + 50);
+  F.forEach((f, i) => { x.fillStyle = (i + r) % 2 ? "#d2e5fb" : "#e8f2fe"; x.fillRect(60 + i * cw * k, 24 + r * ch * k, cw * k, ch * k); x.drawImage(im, i * cw, 0, cw, ch, 60 + i * cw * k, 24 + r * ch * k, cw * k, ch * k); });
+  x.fillStyle = "#0d2a5e";
+}
+document.body.dataset.ready = "1";
+</script></body></html>
