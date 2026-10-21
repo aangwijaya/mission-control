@@ -1,0 +1,57 @@
+{
+ "cell": [
+  64,
+  96
+ ],
+ "base": 94,
+ "frames": [
+  "idle0",
+  "idle1",
+  "blink",
+  "walk0",
+  "walk1",
+  "walk2",
+  "walk3",
+  "back0",
+  "back1",
+  "back2",
+  "back3",
+  "backidle",
+  "sit0",
+  "sit1",
+  "wave0",
+  "wave1",
+  "charge",
+  "sitblink"
+ ],
+ "agents": {
+  "nerd": {
+   "height": 80,
+   "width": 38
+  },
+  "makelar": {
+   "height": 79,
+   "width": 42
+  },
+  "alcapone": {
+   "height": 88,
+   "width": 40
+  },
+  "sisotoy": {
+   "height": 84,
+   "width": 36
+  },
+  "kuku": {
+   "height": 87,
+   "width": 34
+  },
+  "kurir": {
+   "height": 80,
+   "width": 38
+  },
+  "jack": {
+   "height": 80,
+   "width": 52
+  }
+ }
+}
