@@ -5,6 +5,9 @@
 - The style is *inspired by* SNES/PS1-era robot action games. It is **not** Capcom/Mega Man art: no official sprites, tiles or characters were used or traced. Mega Man is a trademark of Capcom, and this project is not affiliated with Capcom.
 - The floor, walls, recharge pods, energy core, teleporters, teleport beam FX, screens and time-of-day lighting are drawn procedurally in code.
 
+## Neo HQ city (index.html)
+- The isometric city, buildings, hover cars, drones, rain, power core, teleporters and HQ furniture are drawn procedurally in code (`js/neohq.js`). The crew uses the existing AI-generated `*_kairo.png` sheets, scaled to 50%, and BIP the mascot uses the existing `assets/props/drone.png`.
+
 ## Music
 - `assets/audio/hq-theme.mp3` is the HQ owner's own MP3 file, re-encoded to 112 kbps. It loops at 40% volume and can be muted with the speaker button; the choice is saved in localStorage.
 
