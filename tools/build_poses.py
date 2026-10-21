@@ -2,10 +2,10 @@
 sit  = master upper body (head+torso+arms, exact pixels) + legs/stool from the AI sit sheet
 wave = AI wave sheet body + master head pasted exactly (raised hand kept from the wave sheet)
 Writes work/<id>_sitM.png and work/<id>_waveM.png"""
-import numpy as np, sys
+import os, sys, numpy as np
 from PIL import Image
 from scipy import ndimage as nd
-WK = "/workspace/mission-control/villagemegax-anim/tools/work"
+WK = os.path.join(os.path.dirname(os.path.abspath(__file__)), "work")
 # neck row (last head row) and waist row in master coords, tuned per agent by eye
 CUT = {"nerd": (21, 43), "makelar": (25, 44), "alcapone": (27, 49), "sisotoy": (27, 47),
        "kuku": (32, 50), "kurir": (29, 45), "jack": (27, 46)}

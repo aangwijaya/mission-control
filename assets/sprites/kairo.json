@@ -47,6 +47,20 @@
      24,
      25,
      26
+    ],
+    "walkd": [
+     27,
+     28,
+     29,
+     30,
+     31,
+     32
+    ],
+    "backd": [
+     33,
+     34,
+     35,
+     36
     ]
    },
    "ticks": {
@@ -55,7 +69,9 @@
     "walk": 4,
     "back": 5,
     "tp": 3,
-    "def": 5
+    "def": 5,
+    "walkd": 4,
+    "backd": 5
    },
    "loop": {
     "blink": true,
@@ -63,7 +79,9 @@
     "walk": true,
     "back": true,
     "tp": false,
-    "def": false
+    "def": false,
+    "walkd": true,
+    "backd": true
    }
   },
   "makelar": {
@@ -107,6 +125,20 @@
      24,
      25,
      26
+    ],
+    "walkd": [
+     27,
+     28,
+     29,
+     30,
+     31,
+     32
+    ],
+    "backd": [
+     33,
+     34,
+     35,
+     36
     ]
    },
    "ticks": {
@@ -115,7 +147,9 @@
     "walk": 4,
     "back": 5,
     "tp": 3,
-    "def": 5
+    "def": 5,
+    "walkd": 4,
+    "backd": 5
    },
    "loop": {
     "blink": true,
@@ -123,7 +157,9 @@
     "walk": true,
     "back": true,
     "tp": false,
-    "def": false
+    "def": false,
+    "walkd": true,
+    "backd": true
    }
   },
   "alcapone": {
@@ -168,6 +204,21 @@
      25,
      26,
      27
+    ],
+    "walkd": [
+     28,
+     29,
+     30,
+     31,
+     32,
+     33
+    ],
+    "backd": [
+     34,
+     35,
+     36,
+     37,
+     38
     ]
    },
    "ticks": {
@@ -176,7 +227,9 @@
     "walk": 4,
     "back": 5,
     "tp": 3,
-    "def": 5
+    "def": 5,
+    "walkd": 4,
+    "backd": 5
    },
    "loop": {
     "blink": true,
@@ -184,7 +237,9 @@
     "walk": true,
     "back": true,
     "tp": false,
-    "def": false
+    "def": false,
+    "walkd": true,
+    "backd": true
    }
   },
   "sisotoy": {
@@ -229,6 +284,20 @@
      25,
      26,
      27
+    ],
+    "walkd": [
+     28,
+     29,
+     30,
+     31,
+     32,
+     33
+    ],
+    "backd": [
+     34,
+     35,
+     36,
+     37
     ]
    },
    "ticks": {
@@ -237,7 +306,9 @@
     "walk": 4,
     "back": 5,
     "tp": 3,
-    "def": 5
+    "def": 5,
+    "walkd": 4,
+    "backd": 5
    },
    "loop": {
     "blink": true,
@@ -245,7 +316,9 @@
     "walk": true,
     "back": true,
     "tp": false,
-    "def": false
+    "def": false,
+    "walkd": true,
+    "backd": true
    }
   },
   "kuku": {
@@ -290,6 +363,20 @@
      25,
      26,
      27
+    ],
+    "walkd": [
+     28,
+     29,
+     30,
+     31,
+     32,
+     33
+    ],
+    "backd": [
+     34,
+     35,
+     36,
+     37
     ]
    },
    "ticks": {
@@ -298,7 +385,9 @@
     "walk": 4,
     "back": 5,
     "tp": 3,
-    "def": 5
+    "def": 5,
+    "walkd": 4,
+    "backd": 5
    },
    "loop": {
     "blink": true,
@@ -306,7 +395,9 @@
     "walk": true,
     "back": true,
     "tp": false,
-    "def": false
+    "def": false,
+    "walkd": true,
+    "backd": true
    }
   },
   "kurir": {
@@ -351,6 +442,20 @@
      25,
      26,
      27
+    ],
+    "walkd": [
+     28,
+     29,
+     30,
+     31,
+     32,
+     33
+    ],
+    "backd": [
+     34,
+     35,
+     36,
+     37
     ]
    },
    "ticks": {
@@ -359,7 +464,9 @@
     "walk": 4,
     "back": 5,
     "tp": 3,
-    "def": 5
+    "def": 5,
+    "walkd": 4,
+    "backd": 5
    },
    "loop": {
     "blink": true,
@@ -367,7 +474,9 @@
     "walk": true,
     "back": true,
     "tp": false,
-    "def": false
+    "def": false,
+    "walkd": true,
+    "backd": true
    }
   },
   "jack": {
@@ -414,6 +523,20 @@
      27,
      28,
      29
+    ],
+    "walkd": [
+     30,
+     31,
+     32,
+     33,
+     34,
+     35
+    ],
+    "backd": [
+     36,
+     37,
+     38,
+     39
     ]
    },
    "ticks": {
@@ -422,7 +545,9 @@
     "walk": 4,
     "back": 5,
     "tp": 3,
-    "def": 5
+    "def": 5,
+    "walkd": 4,
+    "backd": 5
    },
    "loop": {
     "blink": true,
@@ -430,7 +555,9 @@
     "walk": true,
     "back": true,
     "tp": false,
-    "def": false
+    "def": false,
+    "walkd": true,
+    "backd": true
    }
   }
  }
