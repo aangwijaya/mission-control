@@ -15,21 +15,15 @@ const P = (x, y, z = 0) => [(x - y) * TW / 2, (x + y) * TH / 2 - z];
 const RM = matchMedia("(prefers-reduced-motion: reduce)").matches;
 let g; // current 2d context
 let t = 0;
-/* siang/senja/malam ikut jam WIB (?time=day|dusk|dawn|night buat paksa) */
+/* selalu malam; ?time=day|dusk|dawn buat lihat suasana lain */
 const TIME_Q = new URLSearchParams(location.search).get("time");
-function wibHour() { try { const p = new Intl.DateTimeFormat("en-GB", { timeZone: "Asia/Jakarta", hour: "2-digit", minute: "2-digit", hour12: false }).format(new Date()).split(":"); return +p[0] + p[1] / 60; } catch (e) { return new Date().getHours(); } }
 const PHASES = {
   day:   { k: "day",   label: "siang", neon: 0.35, lit: 0.8,  sky: ["#6f93f0", "#b4c0ff", "#ffd6ec"], city: ["#8d98dc", "#a4aeea"], stars: 0,   wash: "rgba(175,195,255,.28)", body: "sun" },
   dusk:  { k: "dusk",  label: "senja", neon: 0.8,  lit: 0.55, sky: ["#24175a", "#9c3f88", "#ff9a6a"], city: ["#3a2060", "#4e2a74"], stars: 0.2, wash: "rgba(255,130,90,.14)", body: "sun" },
   dawn:  { k: "dawn",  label: "subuh", neon: 0.6,  lit: 0.62, sky: ["#1c2a6a", "#7466bc", "#ffc4a0"], city: ["#2a2a6a", "#3a3a80"], stars: 0.35, wash: "rgba(200,180,255,.16)", body: "moon" },
   night: { k: "night", label: "malam", neon: 1,    lit: 0.42, sky: ["#07051a", "#170d3a", "#2a0f45"], city: ["#120a30", "#1a1040"], stars: 1,   wash: null, body: "moon" },
 };
-function skyPhase() {
-  if (PHASES[TIME_Q]) return PHASES[TIME_Q];
-  const h = wibHour();
-  return h >= 6.5 && h < 17 ? PHASES.day : h >= 17 && h < 19 ? PHASES.dusk : h >= 4.5 && h < 6.5 ? PHASES.dawn : PHASES.night;
-}
-let SKY = skyPhase();
+const SKY = PHASES[TIME_Q] || PHASES.night;
 const hash = (a, b = 0, c = 0) => { const s = Math.sin(a * 127.1 + b * 311.7 + c * 74.7) * 43758.5453; return s - Math.floor(s); };
 const flick = (seed, rate = 0.04) => (hash(seed, Math.floor(t * 9)) < rate ? 0.25 : 1);
 
@@ -50,11 +44,11 @@ const block = (r) => { for (let y = r.y0; y < r.y1; y++) for (let x = r.x0; x < 
 const statics = [];
 
 const BUILD = [
-  { k: "tier", x0: 12, y0: 2, x1: 15, y1: 6, h: 150, c: ["#3a3072", "#2a2357", "#1d1842"], store: "#ff3ea5", win: "grid",
+  { k: "tier", x0: 1, y0: 11, x1: 4, y1: 14, h: 150, c: ["#3a3072", "#2a2357", "#1d1842"], store: "#ff3ea5", win: "grid",
     tiers: [[0.45, 96, "band"], [0.9, 74, "tall"]], spire: 1, balcony: 1, awning: "#ff3ea5", ac: 1,
-    signs: [{ k: "v", text: "HOTEL", col: "#ff3ea5", u: 0.5, v: 140 }, { k: "h", f: "R", text: "NEO INN", col: "#35f2ff", u: 2, v: 120, s: 10 }] },
+    signs: [{ k: "v", text: "HOTEL", col: "#ff3ea5", u: 0.5, v: 140 }, { k: "h", f: "R", text: "NEO INN", col: "#35f2ff", u: 1.5, v: 120, s: 10 }] },
   { k: "round", x0: 15, y0: 0, x1: 17, y1: 2, h: 300, r: 0.9, store: "#35f2ff" },
-  { k: "shop", x0: 1, y0: 11, x1: 4, y1: 14, h: 74, c: ["#3b2c62", "#2b2050", "#1e1640"], store: "#ffb547", win: "grid", awning: "#ffb547", lights: 1, garden: 1, ac: 1, board: "KUKU TV",
+  { k: "shop", x0: 12, y0: 2, x1: 15, y1: 5, h: 74, c: ["#3b2c62", "#2b2050", "#1e1640"], store: "#ffb547", win: "grid", awning: "#ffb547", lights: 1, garden: 1, ac: 1, board: "KUKU TV",
     signs: [{ k: "h", f: "L", text: "KOPI", col: "#ffb547", u: 1.5, v: 64, s: 12 }, { k: "h", f: "R", text: "BUKA 24J", col: "#35f2ff", u: 1.5, v: 60, s: 7 }] },
 ];
 
@@ -625,7 +619,7 @@ add(CORE.x0, CORE.y0, CORE.x1, CORE.y1, drawCore);
 [[16, 4], [5, 13], [9, 11], [0, 13], [12, 0], [16, 6]].forEach(([x, y]) => add(x, y, x + 1, y + 1, () => drawTree(x, y)));
 [[8, 13]].forEach(([x, y]) => add(x, y, x + 1, y + 1, () => drawBench(x, y)));
 add(6, 11, 8, 13, () => drawStatue(6, 11));
-add(2, 10, 3, 11, () => drawCafe(2, 10));
+add(13, 6, 14, 7, () => drawCafe(13, 6));
 const capUsed = CAPS.map(() => false);
 
 /* ---------- ground (prerendered once) ---------- */
@@ -685,7 +679,7 @@ function bfs(sx, sy, gx, gy) {
   }
   return null;
 }
-const HANG = [[13, 12], [12, 12], [15, 10], [13, 10], [3, 10], [8, 10], [12, 7], [16, 7], [6, 4], [2, 5], [0, 11], [16, 13]];
+const HANG = [[13, 12], [12, 12], [15, 10], [13, 10], [3, 10], [8, 10], [12, 6], [16, 7], [6, 4], [2, 5], [0, 11], [16, 13]];
 function randFree() { for (;;) { const x = (Math.random() * MW) | 0, y = (Math.random() * MH) | 0; if (walkable(x, y)) return [x, y]; } }
 
 function think(a) {
@@ -1226,7 +1220,6 @@ async function boot() {
     const q = c.getContext("2d"); q.imageSmoothingEnabled = true; q.imageSmoothingQuality = "high"; q.drawImage(src, 0, 0, c.width, c.height); bip.img = c; }
   await loadStatus();
   setInterval(loadStatus, POLL_MS);
-  setInterval(() => { const s = skyPhase(); if (s !== SKY) SKY = s; renderSync(); }, 30000);
   let last = performance.now();
   const loop = (now) => { const dt = Math.min(0.05, (now - last) / 1000); last = now; render(dt); requestAnimationFrame(loop); };
   requestAnimationFrame(loop);
