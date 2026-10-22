@@ -11,6 +11,7 @@ from anim_extract import extract, down, load_pal, ROOT
 from build_poses import CUT
 from eyes2 import close_eyes
 from diag_cleanup import clean_dots
+from hair_sway import sway, SWAY
 
 CW, CH, BASE = 64, 96, 94
 OUT = f"{ROOT}/assets/sprites"
@@ -30,6 +31,7 @@ def paste(dst, src, ox, oy):
 SHEETS = {}
 def sheet(name, **kw):
     kw.setdefault("merge", 0)
+    if name in SPLIT_N: kw["n"] = SPLIT_N[name]
     key = (name, tuple(sorted(kw.items())))
     if key not in SHEETS: SHEETS[key] = extract(name, **kw)
     return SHEETS[key]
@@ -106,8 +108,9 @@ def flash(c, R, light=True):
 CFG = {
     "makelar": dict(idle=("makelar_idle_v1", [0, 1, 2, 4]), walk=("makelar_walk_v1", [0, 2, 4, 6, 8]), back=("makelar_back_v1", [0, 1, 2, 3]),
                     tp=("makelar_teleport_v1", [5, 6, 7]), de=("makelar_defeat_v1", 0)),
-    "alcapone": dict(idle=("alcapone_idle_v1", [0, 1, 2, 3]), walk=("alcapone_walk_v2", [0, 1, 2, 3, 4, 5]), back=("alcapone_back_v1", [0, 1, 2, 3]),
-                     tp=("alcapone_teleport_v1", [5, 6, 7]), de=("alcapone_defeat_v1", 0)),
+    # alcapone = redesign B (white pearl + gold + ice-blue, golden-blond ponytail); defeat keeps the AI head (hair whips up)
+    "alcapone": dict(idle=("alcapone_idle_v2", [0, 1, 2, 3]), walk=("alcapone_walk_v3", [0, 1, 2, 3, 4, 5]), back=("alcapone_back_v2", [0, 1, 2, 3]),
+                     tp=("alcapone_teleport_v2", [5, 6, 7]), tp_f=(.69, .86, .98), de=("alcapone_defeat_v2", 0), de_head=False, de_h=84, de_mode="box"),
     "sisotoy": dict(idle=("sisotoy_idle_v1", [0, 1, 2, 3]), walk=("sisotoy_walk_v1", [0, 1, 2, 3, 4, 5]), back=("sisotoy_back_v1", [0, 1, 2, 3]),
                     tp=("sisotoy_teleport_v1", [3, 5, 6]), de=("sisotoy_defeat_v1", 0)),
     "kuku": dict(idle=("kuku_idle_v1", [0, 1, 2, 3]), walk=("kuku_walk_v1", [0, 1, 2, 3, 4, 5]), back=("kuku_back_v1", [0, 1, 2, 3]),
@@ -125,12 +128,18 @@ CFG = {
 DIAG = {
     "nerd":     dict(walkd=([0, 1, 2, 3, 4, 5], None, True), backd=([0, 1, 2, 3], None, False)),
     "makelar":  dict(walkd=([0, 1, 2, 3, 4, 5], None, True), backd=([0, 1, 2, 3], None, False)),
-    "alcapone": dict(walkd=([0, 1, 2, 3, 4, 5], None, True), backd=([3, 4, 5, 6, 7], None, False)),
+    "alcapone": dict(walkd=([0, 1, 2, 3, 4, 5], None, True), backd=([0, 1, 2, 3, 4, 5], None, False)),
     "sisotoy":  dict(walkd=([0, 1, 2, 3, 4, 5], None, True), backd=([0, 1, 2, 3], None, False)),
     "kuku":     dict(walkd=([0, 1, 2, 3, 4, 5], None, True), backd=([0, 1, 2, 3], None, False)),
     "kurir":    dict(walkd=([0, 1, 2, 3, 4, 5], None, True), backd=([0, 1, 2, 3], None, False)),
     "jack":     dict(walkd=([0, 1, 2, 3, 4, 5], None, True), backd=([0, 1, 2, 3], None, False)),
 }
+
+# diagonal source sheet when it is not anim/raw/<id>_<seq>.png (versioned redesigns)
+DIAG_SRC = {"alcapone": dict(walkd="alcapone_walkd_v2", backd="alcapone_backd_v2")}
+
+# sheets whose sprites touch (long hair over the next sprite): number of characters, cut by anim_extract.split_n
+SPLIT_N = {"alcapone_walk_v3": 6, "alcapone_walkd_v2": 6}
 
 # agents whose diagonal frames get the dot cleanup (tools/diag_cleanup.py): vertical band per sequence
 DIAG_CLEAN = {"kuku": dict(walkd=(0.30, 0.62), backd=(0.36, 0.62)), "kurir": dict(walkd=(0.30, 0.62), backd=(0.36, 0.62))}
@@ -146,7 +155,7 @@ def chars(name):
 def add_diag(id_, add, seqs, H, hs):
     pal = load_pal(id_)
     for seq, (idx, order, head) in DIAG[id_].items():
-        name = f"{id_}_{seq}"; ch = chars(name)
+        name = DIAG_SRC.get(id_, {}).get(seq, f"{id_}_{seq}"); ch = chars(name)
         out = items_scaled(name, [ch[i] for i in idx], std_h(name), H, pal, split=True)
         if head: out = [hs(o) for o in out]
         if seq in BACK_HEAD.get(id_, {}):                                # one 3/4-back head + bird for every frame (bob follows the body)
@@ -195,7 +204,9 @@ def build_agent(id_, nerd_cells, nerd_seqs):
     H = MASTER.shape[0]; NECK = CUT[id_][0]; HEAD = MASTER[:NECK].copy()
     hs = lambda o: head_swap(o, HEAD, NECK)
     frames, seqs = [], {}
-    def add(seq, cells): seqs[seq] = list(range(len(frames), len(frames) + len(cells))); frames.extend(cells)
+    def add(seq, cells):
+        if seq in SWAY.get(id_, {}): cells = [sway(cl, d) for cl, d in zip(cells, SWAY[id_][seq])]   # ponytail swing
+        seqs[seq] = list(range(len(frames), len(frames) + len(cells))); frames.extend(cells)
     def pick(key, idx=None, head=True):
         name, ix = c[key]; ix = idx if idx is not None else ix
         out = items_scaled(name, ix if isinstance(ix, list) else [ix], std_h(name), H, pal, split=True)
@@ -208,13 +219,16 @@ def build_agent(id_, nerd_cells, nerd_seqs):
     add("back", [cell(o, "torso") for o in pick("back", head=False)])
     # teleport: shared beam + splash (tinted), white silhouette of this agent's idle, 3 AI landing frames, idle0
     name, ix = c["tp"]                                                 # crouch / half / rise normalised to 80/88/95 % of the master
-    land = [hs(item(name, i, round(H * f), True, pal, split=True)) for i, f in zip(ix, (.80, .88, .95))]
+    land = [hs(item(name, i, round(H * f), True, pal, split=True)) for i, f in zip(ix, c.get("tp_f", (.80, .88, .95)))]
     nb = [nerd_cells[i] for i in nerd_seqs["tp"][:2]]
     add("tp", [tint_fx(nb[0], R, True), tint_fx(nb[1], R, True), flash(cell(idle[0]), R, False)] + [cell(o) for o in land] + [cell(idle[0])])
     # defeat: own stumble frame, then shared flash + orb rings tinted to the palette
-    st = pick("de")[0]
+    if "de_h" in c: st = item(c["de"][0], c["de"][1], c["de_h"], True, pal, split=True)   # tallest item = hair, not body
+    else: st = pick("de")[0]
+    if c.get("de_head", True) and "de_h" in c: st = hs(st)
     orbs = [tint_fx(nerd_cells[i], R) for i in nerd_seqs["def"][3:]]
-    add("def", [cell(st), flash(cell(st), R, True), flash(cell(st), R, False)] + orbs)
+    dm = c.get("de_mode", "feet")                                      # "box": wide stumble pose centred so it is not clipped
+    add("def", [cell(st, dm), flash(cell(st, dm), R, True), flash(cell(st, dm), R, False)] + orbs)
     add_diag(id_, add, seqs, H, hs)
     return frames, seqs
 

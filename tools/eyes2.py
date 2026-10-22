@@ -5,7 +5,7 @@ nerd has a visor: instead of closing eyes we draw a bright diagonal glint across
 import numpy as np
 EYES = {
     "makelar": dict(skin=(25, 20), boxes=[(19, 23, 14, 18, "L"), (27, 30, 14, 18, "R")]),
-    "alcapone": dict(skin=(24, 23), boxes=[(19, 22, 19, 21, "L"), (25, 27, 19, 21, "R")]),
+    "alcapone": dict(skin=(24, 22), boxes=[(21, 22, 20, 21, "L"), (25, 26, 20, 21, "R")]),   # B master (hand-cleaned face)
     "sisotoy": dict(skin=(20, 25), boxes=[(12, 16, 20, 23, "L"), (20, 23, 20, 23, "R")]),
     "kuku": dict(skin=(19, 29), boxes=[(14, 18, 24, 28, "L"), (21, 24, 24, 28, "R")]),
     "kurir": dict(skin=(25, 21), boxes=[(20, 23, 16, 19, "L"), (27, 30, 16, 19, "R")]),

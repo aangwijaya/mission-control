@@ -9,10 +9,12 @@ from sprites_lib import key_mask, make_palette, mode_downscale, outline, clean_s
 from scipy import ndimage as nd
 
 ROOT = dirname(dirname(abspath(__file__)))
-SRC = {"nerd": "nerd_v2", "makelar": "makelar_v2", "alcapone": "alcapone_v2", "sisotoy": "sisotoy_v2",
+SRC = {"nerd": "nerd_v2", "makelar": "makelar_v2", "alcapone": "alcapone_v3", "sisotoy": "sisotoy_v2",
        "kuku": "kuku_v2", "kurir": "kurir_v2", "jack": "jack_v2"}
 SCALE = 1 / 6.4          # ~6.4 source px per art pixel -> busts end up ~125-150 px tall
 COLORS = 32
+# portraits whose small accent / skin areas must keep their own palette slots (alcapone B: ice-blue gems, face)
+RESERVE = {"alcapone": ("SKIN", "ICE")}
 
 def build(id_):
     a = np.asarray(Image.open(f"{ROOT}/portraits/raw/{SRC[id_]}.jpg").convert("RGB"))
@@ -21,7 +23,10 @@ def build(id_):
     fg = np.isin(lab, [i + 1 for i, s in enumerate(sizes) if s > 400])      # drop JPEG crumbs, keep antenna/bird bits
     ys, xs = np.nonzero(fg); sl = (slice(ys.min(), ys.max() + 1), slice(xs.min(), xs.max() + 1))
     rgb, m = np.ascontiguousarray(a[sl]), fg[sl]
-    pal, P = make_palette(rgb[m], COLORS)
+    if id_ in RESERVE:
+        import alcapone_b as AB
+        pal, P = AB.palette_with_accent(rgb[m], COLORS, [getattr(AB, k) for k in RESERVE[id_]])
+    else: pal, P = make_palette(rgb[m], COLORS)
     o = clean_specks(outline(mode_downscale(rgb, m, SCALE, pal, P)), 4)
     ys, xs = np.nonzero(o[..., 3] > 0); o = o[ys.min():ys.max() + 1, xs.min():xs.max() + 1]
     Image.fromarray(o).save(f"{ROOT}/assets/portraits/{id_}.png", optimize=True)
@@ -29,4 +34,4 @@ def build(id_):
 
 if __name__ == "__main__":
     os.makedirs(f"{ROOT}/assets/portraits", exist_ok=True)
-    for k in SRC: print(k, build(k))
+    for k in [a for a in sys.argv[1:]] or SRC: print(k, build(k))

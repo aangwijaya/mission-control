@@ -5,8 +5,10 @@ from PIL import Image
 sys.path.insert(0, __file__.rsplit("/", 1)[0]); from eyes2 import close_eyes
 from build_poses import make_sit, make_wave, CUT, HANDBOX
 from scipy import ndimage as nd
-WK = "/workspace/mission-control/villagemegax-anim/tools/work"; OUT = "/workspace/mission-control/villagemegax-anim/assets/sprites"
-IDS = ["nerd", "makelar", "alcapone", "sisotoy", "kuku", "kurir", "jack"]
+import os
+ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))          # repo root (was a hard-coded old checkout)
+WK = f"{ROOT}/tools/work"; OUT = f"{ROOT}/assets/sprites"
+IDS = [a for a in sys.argv[1:] if not a.startswith("-")] or ["nerd", "makelar", "alcapone", "sisotoy", "kuku", "kurir", "jack"]
 CW, CH, BASE = 64, 96, 94
 FR = ["idle0", "idle1", "blink", "walk0", "walk1", "walk2", "walk3", "back0", "back1", "back2", "back3", "backidle",
       "sit0", "sit1", "wave0", "wave1", "charge", "sitblink"]
@@ -54,6 +56,7 @@ def wave2(o):
     return out
 
 meta = {"cell": [CW, CH], "base": BASE, "frames": FR, "agents": {}}
+if os.path.exists(f"{OUT}/sprites.json"): meta["agents"] = json.load(open(f"{OUT}/sprites.json"))["agents"]   # keep agents not rebuilt
 for id_ in IDS:
     idle, back = ld(f"{id_}_idle"), ld(f"{id_}_back")
     neck, waist = CUT[id_]

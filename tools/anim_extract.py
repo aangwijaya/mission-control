@@ -38,12 +38,34 @@ def split_wide(fg, rs):
         cuts.append(x1); out += [[cuts[j], cuts[j + 1]] for j in range(k)]
     return out
 
-def extract(name, scale_ref=None, thr=95, char=True, merge=12, split=False):
+def split_n(fg, rs, n):
+    """sheet with a known number `n` of characters whose runs touch (hair over the next sprite's boots): give every
+    run a share of n by width and cut it at the emptiest columns near the even split points"""
+    rs = [r for r in rs if r[1] - r[0] > 30]; tot = sum(r[1] - r[0] for r in rs); ks = [max(1, round(n * (r[1] - r[0]) / tot)) for r in rs]
+    while sum(ks) > n: ks[ks.index(max(ks))] -= 1
+    while sum(ks) < n: ks[ks.index(max(ks))] += 1
+    out = []
+    for (x0, x1), k in zip(rs, ks):
+        cnt = fg[:, x0:x1].sum(0); cuts = [x0]; w = (x1 - x0) / k
+        for j in range(1, k):
+            c = int(w * j); lo, hi = max(1, c - int(w // 4)), min(x1 - x0 - 1, c + int(w // 4))
+            cuts.append(x0 + lo + int(np.argmin(cnt[lo:hi])))
+        cuts.append(x1); out += [[cuts[j], cuts[j + 1]] for j in range(k)]
+    return out
+
+def extract(name, scale_ref=None, thr=95, char=True, merge=12, split=False, n=None):
     fn = next((f"{RAW}/{name}.{e}" for e in ("jpg", "png") if os.path.exists(f"{RAW}/{name}.{e}")), f"{RAW}/{name}.jpg")
     a = np.asarray(Image.open(fn).convert("RGB"))
     fg = key_mask(a, thr)
     rs = items(a, fg, merge=merge); res = []
-    if split: rs = split_wide(fg, rs)
+    if n:
+        rs = split_n(fg, rs, n); fg = fg.copy()
+        for x0, x1 in rs:                        # drop neighbour bits cut off at the crop edges (hair tips, boot toes)
+            lab, k = nd.label(fg[:, x0:x1]); sz = nd.sum(fg[:, x0:x1], lab, range(1, k + 1))
+            for j, z in enumerate(sz, 1):
+                cols = np.nonzero((lab == j).any(0))[0]
+                if z < .15 * sz.max() and (cols.min() == 0 or cols.max() == x1 - x0 - 1): fg[:, x0:x1][lab == j] = False
+    elif split: rs = split_wide(fg, rs)
     for i, (x0, x1) in enumerate(rs):
         m = fg[:, x0:x1]; ys = np.nonzero(m.any(1))[0]; y0, y1 = ys.min(), ys.max() + 1
         res.append(dict(i=i, x0=x0, x1=x1, y0=int(y0), y1=int(y1), h=int(y1 - y0)))
