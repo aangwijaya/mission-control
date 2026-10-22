@@ -9,7 +9,7 @@
    URL: ?demo=1 status contoh. Versi lama (top-down) ada di classic.html. */
 
 import { AGENTS, LOOKS } from "./agents.js";
-import { initDialog, openDialog, closeDialog, statusLine } from "./dialog-ui.js";
+import { initDialog, openDialog, closeDialog, dialogOpen, statusLine } from "./dialog-ui.js";
 
 const TW = 64, TH = 32, MW = 17, MH = 14;
 const P = (x, y, z = 0) => [(x - y) * TW / 2, (x + y) * TH / 2 - z];
@@ -1200,10 +1200,14 @@ function renderInfo(a) {
     </div>
     <p class="hint">${DEMO ? "Mode demo: status contoh, bukan data asli." : "Data dari status.json, dicek tiap 60 detik."} Klik karakternya buat nyapa.</p>`;
 }
+/* the crew dialog hides the crew list / profile card while it is open; closing it must only remove the dialog:
+   no camera pan back, no profile card popping up, no crew list collapsing (that read as "the page jumps" on close).
+   So a crew pick leaves the panels exactly as they were before the dialog opened; INFO_KEEP = was the card visible then. */
+let INFO_KEEP = false;
 function pick(a) {
   SEL = a;
-  if (SMALL.matches) setCrew(false);
   if (a === bip) {
+    if (SMALL.matches) setCrew(false);
     closeDialog();
     bip.say = { text: BIP_LINES[(Math.random() * BIP_LINES.length) | 0], until: t + 3 }; bip.spin = 0.8;
     document.getElementById("infoBody").innerHTML = `<img src="assets/props/drone.png" alt="" style="object-fit:contain;padding:6px"><div><h3 style="color:#ffb547">BIP</h3><p>maskot markas · <span class="c-work">PATROLI</span></p><p>Drone kecil penjaga Hunter Base. Cuma keliling di dalam markas, kadang muter dan nyapa kru.</p></div>`;
@@ -1211,7 +1215,8 @@ function pick(a) {
     if (bip.sx != null) panTo(bip.sx, bip.sy - 20); return;
   }
   a.say = null;   // the NPC dialog below replaces the little speech bubble for crew clicks
-  renderInfo(a); info.hidden = false;
+  if (!dialogOpen()) INFO_KEEP = !info.hidden;   // switching agent inside an open dialog keeps the first answer
+  renderInfo(a);                                  // card content follows the pick; its visibility does not change
   const I = a.info || {};
   openDialog({ id: a.id, name: a.def.name, accent: a.def.accent, portrait: `assets/portraits/${a.id}.png`,
     first: statusLine(a.id, a.status, I.summary || a.summary, I.lastActive ? relTime(I.lastActive) : "") });
@@ -1259,7 +1264,9 @@ muteBtn.addEventListener("click", () => {
 document.addEventListener("visibilitychange", () => { if (document.hidden) BGM.pause(); else if (musicOn) playMusic(); });
 BGM.addEventListener("play", musicUI); BGM.addEventListener("pause", musicUI);
 musicUI(); playMusic();
-initDialog({ soundOn: () => musicOn });   // dialog blips follow the music on/off button
+initDialog({ soundOn: () => musicOn,   // dialog blips follow the music on/off button
+  // close = the camera stays exactly where it is right now (an unfinished open-pan is stopped, never reversed)
+  onClose: () => { pan = null; if (!INFO_KEEP && SEL !== bip) info.hidden = true; } });
 
 /* ---------- boot ---------- */
 async function boot() {
