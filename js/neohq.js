@@ -26,7 +26,11 @@ const PHASES = {
 };
 const SKY = PHASES[TIME_Q] || PHASES.night;
 const hash = (a, b = 0, c = 0) => { const s = Math.sin(a * 127.1 + b * 311.7 + c * 74.7) * 43758.5453; return s - Math.floor(s); };
-const flick = (seed, rate = 0.04) => (hash(seed, Math.floor(t * 9)) < rate ? 0.25 : 1);
+/* HD pass P3 (cahaya), P4 (skyline), P5 (detail gedung); matikan satu-satu di sini kalau perlu */
+const FX = { p3: true, p4: true, p5: true };
+// P3: hanya 2 neon yang "rusak" dan berkedip (BUKA 24J + MISSION CONTROL), sisanya stabil
+const BROKEN = new Set([11.7, 91]);
+const flick = (seed, rate = 0.04) => (FX.p3 && !BROKEN.has(seed) ? 1 : hash(seed, Math.floor(t * 9)) < rate ? 0.25 : 1);
 
 
 /* ---------- map ---------- */
@@ -130,7 +134,19 @@ function windows(b, f, seed, style = "grid", v0 = 56) {
     let col = "#120e28";
     if (k > SKY.lit) col = winCol(k);
     if (k > SKY.lit && hash(seed + 9, i, v) > 0.94 && Math.sin(t * 0.7 + k * 40) > 0.6) col = "#120e28";
-    face(b, f, u, v, () => { g.fillStyle = col; g.fillRect(0, -11, 12, 11); g.fillStyle = "rgba(255,255,255,.08)"; g.fillRect(0, -11, 12, 2); });
+    if (!FX.p5) { face(b, f, u, v, () => { g.fillStyle = col; g.fillRect(0, -11, 12, 11); g.fillStyle = "rgba(255,255,255,.08)"; g.fillRect(0, -11, 12, 2); }); continue; }
+    // P5: lantai kantor (semua menyala dingin) vs hunian (gelap, hangat, tirai, TV biru berkedip); bingkai + kilap kaca
+    const office = hash(seed, v, 77) > 0.72, kind = office ? "cold" : k < SKY.lit ? "dark" : hash(seed, i, v + 3) > 0.82 ? "tv" : hash(seed, i, v + 4) > 0.7 ? "blind" : k > 0.75 ? "cold" : "warm";
+    face(b, f, u, v, () => {
+      g.fillStyle = "#0a0820"; g.fillRect(-1, -12, 14, 13);
+      g.fillStyle = kind === "dark" ? "#120e28" : kind === "warm" || kind === "blind" ? "rgba(255,196,107,.85)" : kind === "tv" ? (Math.sin(t * 7 + i * 3 + v) > 0.2 ? "rgba(120,150,255,.9)" : "rgba(60,80,200,.8)") : office ? "rgba(170,240,255,.8)" : "rgba(111,246,255,.75)";
+      g.fillRect(0, -11, 12, 11);
+      if (kind === "blind") { g.fillStyle = "rgba(40,24,60,.85)"; g.fillRect(0, -11, 12, 6); g.fillStyle = "rgba(255,220,160,.4)"; for (let y = -10; y < -5; y += 2) g.fillRect(0, y, 12, 1); }
+      if (kind === "tv") { g.fillStyle = "rgba(20,14,40,.7)"; g.fillRect(2, -4, 8, 4); }
+      if (kind !== "dark") { g.fillStyle = "rgba(255,255,255,.35)"; g.fillRect(2, -10, 1, 1); g.fillRect(3, -9, 1, 1); g.fillRect(4, -8, 1, 1); }
+      else { g.fillStyle = "rgba(160,150,255,.12)"; g.fillRect(2, -10, 3, 1); }
+      g.fillStyle = "rgba(190,180,255,.28)"; g.fillRect(-1, 1, 14, 1);
+    });
   }
 }
 function storefront(b, i) {
@@ -185,6 +201,10 @@ function cyl(cx, cy, r, z0, h, cols, edge) {
 }
 function vSign(x, y, text, col, idx, lift = 0) {
   const hgt = text.length * 14 + 8, a = flick(idx * 3.3);
+  if (FX.p5) {   // P5: braket logam ke dinding + kabel listrik
+    g.fillStyle = "#5b51a8"; for (const yy of [y + 6, y + hgt - 8]) { g.fillRect(x + 8, yy, 10, 3); g.fillStyle = "#2a2357"; g.fillRect(x + 16, yy - 2, 3, 7); g.fillStyle = "#5b51a8"; }
+    g.strokeStyle = "#0e0b24"; g.lineWidth = 1.5; g.beginPath(); g.moveTo(x + 4, y + hgt); g.quadraticCurveTo(x + 6, y + hgt + 16, x + 18, y + hgt + 10); g.stroke();
+  }
   g.fillStyle = "#0b0720"; g.fillRect(x - 9, y, 18, hgt);
   g.save(); g.globalAlpha = a; g.shadowColor = col; g.shadowBlur = 10; g.strokeStyle = col; g.lineWidth = 2; g.strokeRect(x - 9, y, 18, hgt); g.restore();
   [...text].forEach((ch, i) => neonText(ch, x, y + 11 + i * 14, col, 10, a));
@@ -194,7 +214,12 @@ function hSign(b, s, idx) {
   const a = flick(idx + 0.7);
   face(b, s.f, s.u, s.v, () => {
     g.font = `${s.s}px "PS2P"`; const w = g.measureText(s.text).width + 14;
+    if (FX.p5) {   // P5: dua batang penggantung + kabel di belakang papan
+      g.fillStyle = "#4a4290"; g.fillRect(-w / 2 + 6, -s.s / 2 - 12, 2, 8); g.fillRect(w / 2 - 8, -s.s / 2 - 12, 2, 8);
+      g.strokeStyle = "#0e0b24"; g.lineWidth = 1; g.beginPath(); g.moveTo(w / 2 - 4, s.s / 2 + 5); g.quadraticCurveTo(w / 2 + 6, s.s / 2 + 14, w / 2 + 14, s.s / 2 + 8); g.stroke();
+    }
     g.fillStyle = "rgba(7,5,26,.85)"; g.fillRect(-w / 2, -s.s / 2 - 5, w, s.s + 10);
+    if (FX.p5) { g.strokeStyle = "rgba(190,180,255,.35)"; g.lineWidth = 1; g.strokeRect(-w / 2 + 0.5, -s.s / 2 - 4.5, w - 1, s.s + 9); }
     neonText(s.text, 0, 0, s.col, s.s, a);
   });
   const sx = s.f === "L" ? P(b.x0 + s.u, b.y1 + 1) : P(b.x1 + 1, b.y1 - s.u);
@@ -206,8 +231,18 @@ function signs(b, i) {
     else hSign(b, s, i * 5 + k);
   }
 }
+function roofDetail(b, i, z) {   // P5: pagar atap, antena dengan lampu merah, pintu tangga
+  const rail = (a, c) => { isoLine([P(...a, z + 7), P(...c, z + 7)], "rgba(150,140,240,.55)", 1); for (let k = 0; k <= 6; k++) { const q = [a[0] + (c[0] - a[0]) * k / 6, a[1] + (c[1] - a[1]) * k / 6]; isoLine([P(q[0], q[1], z), P(q[0], q[1], z + 7)], "rgba(150,140,240,.4)", 1); } };
+  rail([b.x0 + 0.05, b.y1 - 0.05], [b.x1 - 0.05, b.y1 - 0.05]); rail([b.x1 - 0.05, b.y0 + 0.05], [b.x1 - 0.05, b.y1 - 0.05]);
+  const ax = b.x0 + 0.4, ay = b.y1 - 0.5, a0 = P(ax, ay, z), a1 = P(ax, ay, z + 36);
+  g.strokeStyle = "#8a83c8"; g.lineWidth = 1.5; g.beginPath(); g.moveTo(...a0); g.lineTo(...a1); g.stroke();
+  g.beginPath(); g.moveTo(a1[0] - 6, a1[1] + 8); g.lineTo(a1[0] + 6, a1[1] + 8); g.moveTo(a1[0] - 4, a1[1] + 14); g.lineTo(a1[0] + 4, a1[1] + 14); g.stroke();
+  if (Math.sin(t * 3 + i) > 0.3) { g.fillStyle = "#ff4a5a"; g.fillRect(a1[0] - 1, a1[1] - 2, 3, 3); glow(a1[0], a1[1], 8, 8, "#ff4a5a", 0.6); }
+  box(b.x1 - 0.75, b.y1 - 0.75, b.x1 - 0.35, b.y1 - 0.35, z, 14, "#4a4290", "#3a3072", "#2a2357", "rgba(155,140,255,.4)");
+}
 function roofBits(b, i) {
   const z = (b.z0 || 0) + b.h;
+  if (FX.p5) roofDetail(b, i, z);
   box(b.x0 + 0.3, b.y0 + 0.3, b.x0 + 0.9, b.y0 + 0.8, z, 9, "#4a4290", "#2d2860", "#221d4a");
   if (b.tank) { cyl(b.x1 - 0.7, b.y0 + 0.8, 0.3, z, 4, ["#5b51a8", "#3a3480", "#221d4a"]); cyl(b.x1 - 0.7, b.y0 + 0.8, 0.26, z + 4, 22, ["#8a83c8", "#5b51a8", "#2d2860"], "#35f2ff"); }
   if (b.garden) {
@@ -613,8 +648,28 @@ function chamberFront() {
   emitterHead(c[0], top, f);
   neonText("TELEPORT", c[0], top - 34, "#35f2ff", 6, 0.85 + 0.15 * Math.sin(t * 2));
 }
+// P5: prop jalanan kecil (tempat sampah, kotak listrik, skuter) di kaki gedung
+function drawBin(x, y) { box(x + 0.62, y + 0.15, x + 0.82, y + 0.35, 0, 12, "#4a4290", "#2d2860", "#221d4a", "rgba(155,140,255,.35)"); box(x + 0.6, y + 0.13, x + 0.84, y + 0.37, 12, 2, "#6a64a8", "#4a4490", "#38327a"); }
+function drawEBox(x, y) {
+  box(x + 0.7, y + 0.2, x + 0.85, y + 0.6, 0, 24, "#3a3072", "#2a2357", "#1d1842", "rgba(155,140,255,.35)");
+  face({ x0: x + 0.7, y0: y + 0.2, x1: x + 0.85, y1: y + 0.6 }, "R", 0, 0, () => { g.fillStyle = "#ffb547"; g.fillRect(3, -18, 5, 4); g.fillStyle = "#ff3ea5"; g.fillRect(8, -10, 4, 3); g.fillStyle = Math.sin(t * 4 + x) > 0 ? "#5cf08a" : "#1d4a3a"; g.fillRect(4, -22, 2, 1); });
+}
+function drawScooter(x, y) {
+  const a = P(x + 0.3, y + 0.55, 3), c = P(x + 0.7, y + 0.55, 3);
+  for (const w of [a, c]) { g.fillStyle = "#0e0b24"; g.beginPath(); g.ellipse(w[0], w[1], 3.5, 3.5, 0, 0, 7); g.fill(); g.strokeStyle = "#5b51a8"; g.lineWidth = 1; g.stroke(); }
+  g.strokeStyle = "#ff3ea5"; g.lineWidth = 2.5; g.beginPath(); g.moveTo(a[0], a[1] - 3); g.lineTo(c[0] - 3, c[1] - 5); g.lineTo(c[0], c[1] - 16); g.stroke();
+  g.fillStyle = "#2a2357"; g.fillRect(a[0] - 1, a[1] - 9, 10, 3); g.fillStyle = "#35f2ff"; g.fillRect(c[0] - 1, c[1] - 17, 3, 2);
+}
 function drawLamp(x, y, col) {
   const b = P(x + 0.5, y + 0.5), tp = P(x + 0.5, y + 0.5, 56);
+  if (FX.p3) {   // P3: kerucut cahaya tipis + debu/air yang melayang di dalamnya
+    const hx = tp[0] + 14, hy = tp[1] + 4, gx = b[0] + 14, gy = b[1] + 6;
+    g.save(); g.globalCompositeOperation = "lighter";
+    const gr = g.createLinearGradient(0, hy, 0, gy); gr.addColorStop(0, shade(col, 1, 0.16)); gr.addColorStop(1, shade(col, 1, 0.03));
+    g.fillStyle = gr; g.beginPath(); g.moveTo(hx - 5, hy); g.lineTo(hx + 5, hy); g.lineTo(gx + 26, gy); g.lineTo(gx - 26, gy); g.closePath(); g.fill();
+    for (let k = 0; k < 6; k++) { const ph = (t * (0.08 + hash(x, y, k) * 0.06) + hash(k, x, y)) % 1, yy = hy + ph * (gy - hy), sp = 4 + ph * 22; g.fillStyle = shade(col, 1.3, 0.55 * (1 - ph)); g.fillRect(Math.round(hx + (hash(k, y) - 0.5) * 2 * sp), Math.round(yy), 1, 1); }
+    g.restore();
+  }
   g.strokeStyle = "#3a3670"; g.lineWidth = 3; g.beginPath(); g.moveTo(...b); g.lineTo(...tp); g.lineTo(tp[0] + 14, tp[1] + 2); g.stroke();
   g.fillStyle = col; g.fillRect(tp[0] + 8, tp[1], 12, 4); glow(tp[0] + 14, tp[1] + 4, 18, 10, col, 0.8);
   glow(b[0] + 14, b[1] + 6, 56, 24, col, 0.2);
@@ -677,6 +732,9 @@ CAPS.forEach(([x, y], i) => {
 [[8, 13]].forEach(([x, y]) => add(x, y, x + 1, y + 1, () => drawBench(x, y)));
 add(6, 11, 8, 13, () => drawStatue(6, 11));
 add(13, 6, 14, 7, () => drawCafe(13, 6));
+// P5 props (tidak memblokir jalan kru; digambar di pojok tile dekat dinding)
+const P5PROPS = [[4, 12, drawBin], [4, 13, drawEBox], [12, 5, drawScooter], [14, 5, drawBin], [15, 2, drawEBox]];
+for (const [x, y, fn] of P5PROPS) add(x, y, x + 1, y + 1, () => { if (FX.p5) fn(x, y); }, false);
 const capUsed = CAPS.map(() => false);
 
 /* ---------- P2: material lantai (aspal, trotoar, panel HQ, plaza, taman); semua detail berseed hash() jadi stabil ---------- */
@@ -1190,9 +1248,17 @@ function drawSky() {
   cx.fillStyle = gr; cx.fillRect(0, 0, VW, VH);
   if (S.stars) for (const [x, y, k] of sky.stars) { cx.fillStyle = `rgba(220,220,255,${S.stars * (0.3 + 0.5 * Math.abs(Math.sin(t * (0.5 + k) + k * 9)))})`; cx.fillRect(x * VW, y * VH, 1.5, 1.5); }
   { const bx = VW * 0.78, by = VH * (S.k === "day" ? 0.14 : 0.3), r = S.body === "sun" ? 26 : 18, col = S.body === "sun" ? (S.k === "dusk" ? "#ffb07a" : "#fff3c4") : "#e9e6ff";
+    if (!FX.p4) {
     const hg = cx.createRadialGradient(bx, by, r * 0.5, bx, by, r * 4); hg.addColorStop(0, col + "66"); hg.addColorStop(1, col + "00"); cx.fillStyle = hg; cx.fillRect(bx - r * 4, by - r * 4, r * 8, r * 8);
+    }
     cx.fillStyle = col; cx.beginPath(); cx.arc(bx, by, r, 0, 7); cx.fill();
-    if (S.body === "moon") { cx.fillStyle = S.sky[0]; cx.beginPath(); cx.arc(bx + r * 0.45, by - r * 0.2, r * 0.85, 0, 7); cx.fill(); } }
+    if (S.body === "moon") { cx.fillStyle = S.sky[0]; cx.beginPath(); cx.arc(bx + r * 0.45, by - r * 0.2, r * 0.85, 0, 7); cx.fill(); }
+    if (FX.p4) {   // P4: halo bulan bertingkat dengan dither, bukan gradien mulus
+      for (let ring = 3; ring >= 1; ring--) { const R0 = r * (1 + ring * 0.9); cx.fillStyle = col + (ring === 1 ? "22" : ring === 2 ? "12" : "0a"); cx.beginPath(); cx.arc(bx, by, R0, 0, 7); cx.fill(); }
+      cx.fillStyle = col + "26"; for (let a = 0; a < 96; a++) { const an = a / 96 * Math.PI * 2, rr = r * (1.9 + (a % 3) * 0.5 + hash(a) * 0.6); cx.fillRect(Math.round(bx + Math.cos(an) * rr), Math.round(by + Math.sin(an) * rr), 1, 1); }
+    }
+  }
+  if (FX.p4) { drawSkyP4(); return; }
   const par = -cam.x * cam.z * 0.12;
   for (let layer = 0; layer < 2; layer++) {
     cx.fillStyle = SKY.city[layer];
@@ -1200,6 +1266,129 @@ function drawSky() {
       const bw = 28 + k * 40, bx = (((x * (VW + 300) + par * (layer + 1)) % (VW + 300)) + VW + 300) % (VW + 300) - 150, bh = VH * h * (layer ? 0.7 : 1);
       cx.fillRect(bx + layer * 20, VH * 0.62 - bh, bw, bh + VH);
       if (layer) for (let wy = 0; wy < bh; wy += 9) if (hash(x * 50, wy) > 0.8 + (1 - SKY.neon) * 0.15) { cx.fillStyle = hash(x, wy) > 0.5 ? "rgba(255,62,165,.5)" : "rgba(53,242,255,.4)"; cx.fillRect(bx + 26 + (hash(wy, x) * (bw - 10)), VH * 0.62 - bh + wy, 3, 2); cx.fillStyle = SKY.city[1]; }
+    }
+  }
+}
+/* ---------- P3: cahaya berhierarki ----------
+   HERO (maks 3): chamber, papan MISSION CONTROL, neon HOTEL. MEDIUM: lampu jalan, KOPI, vending, holo table, NET.
+   Layar digelapkan sedikit (multiply-ish), lalu sumber cahaya "melubangi" kegelapan itu + sedikit warna additive. */
+const LIGHTS = [
+  { w: () => P(CH_X, CH_Y, 40), col: "#35f2ff", r: 150, k: "hero", fl: () => P(CH_X, CH_Y) },
+  { w: () => P(4.5, 1, 170), col: "#35f2ff", r: 170, k: "hero" },
+  { w: () => P(1.5, 14, 100), col: "#ff3ea5", r: 130, k: "hero" },
+  { w: () => P(13.5, 5, 30), col: "#ffb547", r: 110, k: "med", fl: () => P(13.5, 5.6) },
+  { w: () => P(16, 1, 160), col: "#35f2ff", r: 120, k: "med", fl: () => P(16.2, 2.3) },
+  { w: () => P(15, 12, 30), col: "#35f2ff", r: 90, k: "med" },
+  ...[[12, 7, "#ffb547"], [12, 13, "#ff3ea5"], [0, 10, "#ffb547"], [15, 7, "#35f2ff"], [9, 13, "#35f2ff"]].map(([x, y, col]) => ({ w: () => { const q = P(x + 0.5, y + 0.5, 30); return [q[0] + 14, q[1]]; }, col, r: 80, k: "med", fl: () => { const q = P(x + 0.5, y + 0.5); return [q[0] + 14, q[1] + 10]; } })),
+  ...[[14, 7, "#35f2ff"], [4, 11, "#ff3ea5"]].map(([x, y, col]) => ({ w: () => P(x + 0.5, y + 0.7, 20), col, r: 55, k: "med", fl: () => P(x + 0.5, y + 1.1) })),
+  ...DESKS.map(([x, y]) => ({ w: () => P(x + 0.5, y + 0.5, 30), col: "#35f2ff", r: 60, k: "med" })),
+];
+const LSPR = new Map();
+function lightSprite(col) {   // cached radial sprite, putih = lubang kegelapan, warna = additive
+  if (LSPR.has(col)) return LSPR.get(col);
+  const c = document.createElement("canvas"); c.width = c.height = 128; const q = c.getContext("2d");
+  const gr = q.createRadialGradient(64, 64, 0, 64, 64, 64); gr.addColorStop(0, col); gr.addColorStop(0.35, shade(col, 1, 0.45)); gr.addColorStop(1, shade(col, 1, 0));
+  q.fillStyle = gr; q.fillRect(0, 0, 128, 128); LSPR.set(col, c); return c;
+}
+let LB = null;
+function lightPass(ZS, TX, TY) {
+  if (!LB) LB = document.createElement("canvas");
+  if (LB.width !== cv.width || LB.height !== cv.height) { LB.width = cv.width; LB.height = cv.height; }
+  const q = LB.getContext("2d"), W = LB.width, H = LB.height;
+  q.globalCompositeOperation = "source-over"; q.clearRect(0, 0, W, H);
+  q.fillStyle = "rgba(5,3,20,.34)"; q.fillRect(0, 0, W, H);
+  const vg = q.createRadialGradient(W / 2, H / 2, Math.min(W, H) * 0.35, W / 2, H / 2, Math.max(W, H) * 0.75); vg.addColorStop(0, "rgba(5,3,20,0)"); vg.addColorStop(1, "rgba(5,3,20,.35)");
+  q.fillStyle = vg; q.fillRect(0, 0, W, H);
+  q.globalCompositeOperation = "destination-out";
+  const white = lightSprite("#ffffff");
+  for (const L of LIGHTS) { const [wx, wy] = L.w(), x = wx * ZS + TX, y = wy * ZS + TY, r = L.r * ZS * (L.k === "hero" ? 1.2 : 1); q.globalAlpha = L.k === "hero" ? 1 : 0.8; q.drawImage(white, x - r, y - r * 0.7, r * 2, r * 1.4); }
+  q.globalAlpha = 1;
+  cx.save(); cx.setTransform(1, 0, 0, 1, 0, 0); cx.drawImage(LB, 0, 0);
+  cx.globalCompositeOperation = "lighter";
+  for (const L of LIGHTS) { const [wx, wy] = L.w(), x = wx * ZS + TX, y = wy * ZS + TY, r = L.r * ZS * 0.6; cx.globalAlpha = L.k === "hero" ? 0.22 : 0.12; cx.drawImage(lightSprite(L.col), x - r, y - r * 0.6, r * 2, r * 1.2); }
+  cx.restore();
+}
+function floorReflections() {   // pantulan neon di lantai basah: pita horizontal 1px, pecah seperti air; hujan = lebih kuat
+  const boost = rainOn ? 1.5 : 1;
+  g.save(); g.globalCompositeOperation = "lighter";
+  for (const L of LIGHTS) {
+    if (!L.fl) continue;
+    const [fx, fy] = L.fl(), n = L.k === "hero" ? 16 : 10, w0 = L.k === "hero" ? 30 : 16;
+    for (let k = 0; k < n; k++) {
+      const a = (1 - k / n) * 0.22 * boost, w = w0 * (1 - k / n * 0.6) * (0.7 + 0.3 * Math.sin(t * 2 + k * 1.7 + fx));
+      g.fillStyle = shade(L.col, 1, a); g.fillRect(Math.round(fx - w / 2 + Math.sin(t * 1.3 + k) * 2), Math.round(fy + k * 2), Math.round(w), 1);
+    }
+  }
+  g.restore();
+}
+
+/* ---------- P4: skyline berlapis (4 layer parallax), kabut horizon, lampu sorot, billboard & mobil terbang jauh ---------- */
+const SKYL = { key: "", layers: [] };
+const SKY_LAYERS = [
+  { sp: 0.04, col: "#2a1f5e", win: 0.04, h: [0.08, 0.22], n: 26, ws: 2 },
+  { sp: 0.08, col: "#20174f", win: 0.07, h: [0.07, 0.2], n: 22, ws: 2 },
+  { sp: 0.14, col: "#170f40", win: 0.1, h: [0.06, 0.17], n: 18, ws: 3 },
+  { sp: 0.22, col: "#0f0a2e", win: 0.14, h: [0.04, 0.14], n: 14, ws: 3 },
+];
+function buildSky() {
+  SKYL.key = VW + "x" + VH + "@" + DPR; SKYL.layers = [];
+  const HZ = VH * 0.62, LW = VW + 400;
+  SKY_LAYERS.forEach((L, li) => {
+    const c = document.createElement("canvas"); c.width = Math.ceil(LW * DPR); c.height = Math.ceil(VH * DPR);
+    const q = c.getContext("2d"); q.scale(DPR, DPR);
+    let x = -20, i = 0;
+    while (x < LW) {
+      const bw = 26 + hash(li, i, 1) * 50, bh = VH * (L.h[0] + hash(li, i, 2) * (L.h[1] - L.h[0])), top = HZ - bh, roof = (hash(li, i, 3) * 6) | 0;
+      q.fillStyle = L.col; q.fillRect(Math.round(x), Math.round(top), Math.round(bw), Math.ceil(VH - top));
+      if (roof === 1) q.fillRect(Math.round(x + bw * 0.25), Math.round(top - 14), Math.round(bw * 0.5), 14);                  // atap bertingkat
+      if (roof === 2) { q.fillRect(Math.round(x + bw / 2), Math.round(top - 30), 2, 30); q.fillRect(Math.round(x + bw / 2 - 4), Math.round(top - 18), 10, 1); }   // antena
+      if (roof === 3) { q.fillRect(Math.round(x + 6), Math.round(top - 10), 12, 8); q.fillRect(Math.round(x + 7), Math.round(top - 2), 1, 2); q.fillRect(Math.round(x + 16), Math.round(top - 2), 1, 2); }   // tangki air
+      if (roof === 4) { q.beginPath(); q.moveTo(x, top); q.lineTo(x + bw / 2, top - 22); q.lineTo(x + bw, top); q.fill(); }      // menara runcing
+      if (roof === 5) { q.beginPath(); q.arc(x + bw / 2, top, bw / 2, Math.PI, 0); q.fill(); }                                     // kubah
+      if (li >= 1 && hash(li, i, 9) > 0.85) { q.fillRect(Math.round(x + bw + 2), Math.round(top - 40), 2, 40); q.fillRect(Math.round(x + bw + 2), Math.round(top - 40), 26, 2); }   // crane
+      const office = hash(li, i, 4) > 0.8;
+      for (let wy = top + 6; wy < HZ - 4; wy += 7) for (let wx = x + 4; wx < x + bw - 4; wx += 6) {
+        const k = hash(li * 31 + i, wx | 0, wy | 0);
+        if (office ? hash(li, i, (wy / 7) | 0) > 0.4 : k < L.win) { q.fillStyle = office ? "rgba(170,230,255,.35)" : k < L.win * 0.3 ? "rgba(255,62,165,.55)" : k < L.win * 0.6 ? "rgba(255,196,107,.5)" : "rgba(53,242,255,.45)"; q.fillRect(Math.round(wx), Math.round(wy), L.ws, L.ws - 1); }
+      }
+      x += bw + 2 + hash(li, i, 5) * 10; i++;
+    }
+    // kabut di kaki layer: makin jauh makin pucat (atmospheric perspective), dengan dither 2x2
+    const fogA = 0.38 - li * 0.08;
+    const gr = q.createLinearGradient(0, HZ - VH * 0.18, 0, HZ + 10); gr.addColorStop(0, "rgba(120,60,170,0)"); gr.addColorStop(1, `rgba(120,60,170,${fogA})`);
+    q.fillStyle = gr; q.fillRect(0, HZ - VH * 0.18, LW, VH * 0.18 + 10);
+    q.fillStyle = `rgba(160,90,200,${fogA * 0.5})`; for (let yy = HZ - 30; yy < HZ; yy += 2) for (let xx = (yy / 2) % 2 ? 0 : 2; xx < LW; xx += 4) if (hash(xx, yy, li) < (yy - (HZ - 30)) / 30) q.fillRect(xx, yy, 1, 1);
+    SKYL.layers.push({ c, sp: L.sp, LW });
+  });
+}
+const BILLS = [{ u: 0.18, li: 1, text: "NEO", h: 0.15 }, { u: 0.55, li: 2, text: "24H", h: 0.12 }, { u: 0.82, li: 1, text: "HUNTER", h: 0.17 }];
+function drawSkyP4() {
+  if (SKYL.key !== VW + "x" + VH + "@" + DPR) buildSky();
+  const HZ = VH * 0.62;
+  // lampu sorot di belakang kota
+  cx.save(); cx.globalCompositeOperation = "lighter";
+  for (let k = 0; k < 2; k++) {
+    const bx = VW * (0.25 + k * 0.45), ang = -Math.PI / 2 + Math.sin(t * 0.12 + k * 2.1) * 0.45, len = VH * 0.9;
+    const ex = bx + Math.cos(ang) * len, ey = HZ + Math.sin(ang) * len, px = -Math.sin(ang) * 40, py = Math.cos(ang) * 40;
+    const gr = cx.createLinearGradient(bx, HZ, ex, ey); gr.addColorStop(0, "rgba(160,140,255,.10)"); gr.addColorStop(1, "rgba(160,140,255,0)");
+    cx.fillStyle = gr; cx.beginPath(); cx.moveTo(bx - 3, HZ); cx.lineTo(bx + 3, HZ); cx.lineTo(ex + px, ey + py); cx.lineTo(ex - px, ey - py); cx.closePath(); cx.fill();
+  }
+  cx.restore();
+  // awan tipis yang lewat
+  for (let k = 0; k < 3; k++) { const x = ((t * (6 + k * 3) + k * 400) % (VW + 400)) - 200, y = VH * (0.18 + k * 0.08); cx.fillStyle = "rgba(30,18,70,.35)"; cx.beginPath(); cx.ellipse(x, y, 160 + k * 40, 8 + k * 3, 0, 0, 7); cx.fill(); }
+  for (const [li, L] of SKYL.layers.entries()) {
+    const off = ((-cam.x * cam.z * L.sp) % L.LW + L.LW) % L.LW;
+    cx.drawImage(L.c, -off - 200, 0, L.LW, VH); cx.drawImage(L.c, -off - 200 + L.LW, 0, L.LW, VH);
+    for (const B of BILLS) if (B.li === li) {   // billboard hologram jauh, warna pelan berganti
+      const x = ((B.u * L.LW - off - 200) % L.LW + L.LW) % L.LW, y = HZ - VH * B.h, col = Math.sin(t * 0.4 + B.u * 9) > 0 ? "#ff3ea5" : "#35f2ff";
+      cx.font = `${li === 1 ? 6 : 8}px "PS2P"`; const w = cx.measureText(B.text).width + 8;
+      cx.fillStyle = "rgba(7,5,26,.8)"; cx.fillRect(Math.round(x - w / 2), Math.round(y - 7), Math.round(w), 13);
+      cx.strokeStyle = col; cx.globalAlpha = 0.7; cx.lineWidth = 1; cx.strokeRect(Math.round(x - w / 2) + 0.5, Math.round(y - 7) + 0.5, Math.round(w) - 1, 12); cx.globalAlpha = 1;
+      cx.fillStyle = col; cx.textAlign = "center"; cx.textBaseline = "middle"; cx.fillText(B.text, x, y);
+    }
+    if (li === 1) for (let k = 0; k < 3; k++) {   // mobil terbang jauh: titik 2px + jejak
+      const ph = (t * (0.025 + k * 0.01) + k * 0.37) % 1, x = ph * (VW + 100) - 50, y = HZ - VH * (0.3 + k * 0.05) + Math.sin(ph * 9) * 4;
+      cx.fillStyle = "rgba(255,200,230,.25)"; cx.fillRect(Math.round(x - 14), Math.round(y), 14, 1); cx.fillStyle = k % 2 ? "#ff3ea5" : "#dfe7ff"; cx.fillRect(Math.round(x), Math.round(y) - 1, 2, 2);
     }
   }
 }
@@ -1225,6 +1414,7 @@ function render(dt) {
   cx.imageSmoothingEnabled = false;
   // wet neon reflections that breathe
   glow(...P(15, 12), 140, 70, "#35f2ff", 0.08 + 0.03 * Math.sin(t * 3));
+  if (FX.p3) floorReflections();
   // depth-sorted world objects
   const objs = statics.slice();
   for (const a of crew) objs.push({ x0: a.x - 0.2, y0: a.y - 0.2, x1: a.x + 0.2, y1: a.y + 0.2, draw: () => drawAgent(a) });
@@ -1232,6 +1422,7 @@ function render(dt) {
   for (const c of cars) { const [x, y] = carPos(c); objs.push({ x0: x - 0.4, y0: y - 0.4, x1: x + 0.4, y1: y + 0.4, draw: () => drawCar(c, x, y) }); }
   for (const o of sortIso(objs)) o.draw();
   for (const d of drones) drawDrone(d);
+  if (FX.p3) lightPass(ZS, TX, TY);
   if (SKY.wash) { cx.save(); cx.setTransform(1, 0, 0, 1, 0, 0); cx.globalCompositeOperation = "screen"; cx.fillStyle = SKY.wash; cx.fillRect(0, 0, cv.width, cv.height); cx.restore(); }
   if (rainOn) {
     if (Math.random() < 0.9) splashes.push({ x: Math.random() * MW, y: Math.random() * MH, t: 0 });
