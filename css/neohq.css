@@ -88,3 +88,36 @@ a{color:var(--cyan)}
 @media (max-width:720px){.links{display:none}}
 .crew.collapsed ul{display:none}
 .crew .mini-btn{background:none;border:1px solid var(--cyan);color:var(--cyan);font-family:var(--f-disp);font-size:8px;padding:2px 5px;cursor:pointer}
+
+/* ---------- NPC dialog (klik kru): potret besar kiri bawah + papan nama + kotak teks panel sci-fi ---------- */
+.npc{position:absolute;inset:auto 0 0 0;height:0;z-index:6;pointer-events:none;--fw:220px;--fh:280px;--acc:var(--cyan);
+  --pad:max(12px,env(safe-area-inset-left,0px));--bot:calc(14px + env(safe-area-inset-bottom,0px))}
+.npc[hidden]{display:none}
+.npc-face{position:absolute;left:var(--pad);bottom:0;width:var(--fw);height:var(--fh);image-rendering:pixelated;image-rendering:crisp-edges;
+  pointer-events:auto;cursor:pointer;z-index:2;filter:drop-shadow(0 0 1px #07051a) drop-shadow(4px 0 0 rgba(7,5,26,.55));animation:npcIn .18s steps(3) both;user-select:none;-webkit-user-select:none}
+.npc-box{position:absolute;bottom:var(--bot);left:calc(var(--pad) + var(--fw) * .62);width:min(720px,calc(100vw - var(--pad) * 2 - var(--fw) * .62));
+  min-height:132px;padding:22px 26px 18px calc(var(--fw) * .38 + 22px);pointer-events:auto;cursor:pointer;outline:none;z-index:1;
+  background:linear-gradient(180deg,rgba(33,24,72,.97),rgba(17,11,43,.97));border:2px solid var(--cyan);
+  clip-path:polygon(14px 0,100% 0,100% calc(100% - 14px),calc(100% - 14px) 100%,0 100%,0 14px);
+  box-shadow:inset 0 0 0 2px #07051a,inset 0 0 0 4px rgba(155,92,255,.55),inset 0 22px 36px -24px rgba(53,242,255,.45);animation:npcIn .18s steps(3) both}
+.npc-box::before{content:"";position:absolute;inset:6px;pointer-events:none;
+  background:repeating-linear-gradient(0deg,rgba(255,255,255,.035) 0 1px,transparent 1px 3px)}
+.npc-name{position:absolute;bottom:calc(var(--bot) + var(--bh,132px) - 2px);left:calc(var(--pad) + var(--fw) + 6px);z-index:1;padding:8px 14px 7px;pointer-events:none;
+  font-family:var(--f-disp);font-size:11px;letter-spacing:.08em;color:#14051f;background:var(--acc);border:2px solid #07051a;border-bottom:0;
+  clip-path:polygon(8px 0,calc(100% - 8px) 0,100% 8px,100% 100%,0 100%,0 8px);text-shadow:1px 1px 0 rgba(255,255,255,.35)}
+.npc-text{position:relative;margin:0;font-family:var(--f-body);font-size:20px;line-height:1.45;color:var(--txt);min-height:2.9em;text-shadow:2px 2px 0 #07051a}
+.npc-text .rest{visibility:hidden}
+.npc-count{position:absolute;right:46px;bottom:9px;font-family:var(--f-disp);font-size:7px;color:var(--mute);letter-spacing:.1em}
+.npc-next{position:absolute;right:20px;bottom:6px;font-size:16px;color:var(--amber);visibility:hidden;text-shadow:0 0 6px rgba(255,181,71,.8)}
+.npc-box.done .npc-next{visibility:visible;animation:blink .8s steps(2) infinite}
+body.npc-open .crew,body.npc-open .info,body.npc-open .note{visibility:hidden}
+@keyframes npcIn{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:none}}
+@media (max-width:720px){
+  .npc{--pad:max(8px,env(safe-area-inset-left,0px));--bot:calc(8px + env(safe-area-inset-bottom,0px))}
+  .npc-box{left:var(--pad);right:var(--pad);width:auto;min-height:118px;padding:16px 14px 20px}
+  .npc-face{bottom:calc(var(--bot) + var(--bh,118px) - 6px)}
+  .npc-name{left:calc(var(--pad) + var(--fw) + 4px);font-size:9px;padding:6px 10px 5px}
+  .npc-text{font-size:17px;line-height:1.4;min-height:4.2em}
+  .npc-count{right:36px;bottom:6px}.npc-next{right:12px;bottom:3px}
+}
+@media (prefers-reduced-motion:reduce){.npc-face,.npc-box{animation:none}.npc-box.done .npc-next{animation:none}}
