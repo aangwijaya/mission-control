@@ -12,6 +12,16 @@ export const DEFAULT_STATUS = {
   sleep:      "Zzz… lagi ngecas di kapsul. Panggil lagi nanti, ya.",
 };
 
+/* Tombol "Chat" di dialog: buka chat agent itu di aplikasi Grok Bot desktop (chatId per agent ada di js/agents.js).
+   hint muncul di kotak dialog kalau setelah ±1,5 detik halaman tidak kehilangan fokus (tanda link-nya tidak ditangani). */
+export const CHAT = {
+  label: "Chat",
+  url: (chatId) => `grokbot://app/v1/agent?id=${encodeURIComponent(chatId)}`,
+  aria: (name) => `Chat dengan ${name} di aplikasi Grok Bot`,
+  hint: "Aplikasi Grok Bot tidak terbuka? Pastikan aplikasinya terpasang dan buka dari komputer ini.",
+  waitMs: 1500,
+};
+
 export const DIALOG = {
   nerd: {
     status: {
