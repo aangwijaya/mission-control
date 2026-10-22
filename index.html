@@ -36,6 +36,14 @@
     <div class="bar"><span>PROFIL KRU</span><button type="button" class="x" id="infoX" aria-label="Tutup">✕</button></div>
     <div class="in" id="infoBody"></div>
   </section>
+  <div class="npc" id="npc" hidden role="dialog" aria-label="Percakapan kru" aria-live="polite">
+    <img class="npc-face" id="npcFace" alt="" draggable="false">
+    <div class="npc-name" id="npcName"></div>
+    <div class="npc-box" id="npcBox" tabindex="-1">
+      <p class="npc-text" id="npcText"></p>
+      <span class="npc-count" id="npcCount"></span><span class="npc-next" aria-hidden="true">▼</span>
+    </div>
+  </div>
   <p class="note">Geser untuk pindah · scroll/pinch untuk zoom · klik kru untuk menyapa</p>
 </section>
 <noscript><p class="nojs">Markas butuh JavaScript.</p></noscript>

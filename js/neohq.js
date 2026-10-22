@@ -9,6 +9,7 @@
    URL: ?demo=1 status contoh. Versi lama (top-down) ada di classic.html. */
 
 import { AGENTS, LOOKS } from "./agents.js";
+import { initDialog, openDialog, closeDialog, statusLine } from "./dialog-ui.js";
 
 const TW = 64, TH = 32, MW = 17, MH = 14;
 const P = (x, y, z = 0) => [(x - y) * TW / 2, (x + y) * TH / 2 - z];
@@ -1152,13 +1153,17 @@ function pick(a) {
   SEL = a;
   if (SMALL.matches) setCrew(false);
   if (a === bip) {
+    closeDialog();
     bip.say = { text: BIP_LINES[(Math.random() * BIP_LINES.length) | 0], until: t + 3 }; bip.spin = 0.8;
     document.getElementById("infoBody").innerHTML = `<img src="assets/props/drone.png" alt="" style="object-fit:contain;padding:6px"><div><h3 style="color:#ffb547">BIP</h3><p>maskot markas · <span class="c-work">PATROLI</span></p><p>Drone kecil penjaga Hunter Base. Cuma keliling di dalam markas, kadang muter dan nyapa kru.</p></div>`;
     info.hidden = false; document.querySelectorAll(".crew li").forEach((l) => l.classList.toggle("sel", l.dataset.id === "bip"));
     cam.x = bip.sx; cam.y = bip.sy - 20; return;
   }
-  a.say = { text: a.def.lines[(Math.random() * a.def.lines.length) | 0], until: t + 3.5 };
+  a.say = null;   // the NPC dialog below replaces the little speech bubble for crew clicks
   renderInfo(a); info.hidden = false;
+  const I = a.info || {};
+  openDialog({ id: a.id, name: a.def.name, accent: a.def.accent, portrait: `assets/portraits/${a.id}.png`,
+    first: statusLine(a.id, a.status, I.summary || a.summary, I.lastActive ? relTime(I.lastActive) : "") });
   document.querySelectorAll(".crew li").forEach((l) => l.classList.toggle("sel", l.dataset.id === a.id));
   if (a.sx != null) { cam.x = a.sx; cam.y = a.sy - 40; }
 }
@@ -1198,6 +1203,7 @@ muteBtn.addEventListener("click", () => {
 document.addEventListener("visibilitychange", () => { if (document.hidden) BGM.pause(); else if (musicOn) playMusic(); });
 BGM.addEventListener("play", musicUI); BGM.addEventListener("pause", musicUI);
 musicUI(); playMusic();
+initDialog({ soundOn: () => musicOn });   // dialog blips follow the music on/off button
 
 /* ---------- boot ---------- */
 async function boot() {

@@ -16,6 +16,10 @@ python3 -m http.server
 
 Open http://localhost:8000/. Add `?demo=1` to load the built-in sample status. Credits are at http://localhost:8000/credits.html and the old version is at http://localhost:8000/classic.html.
 
+## Crew dialog
+
+Click a crew member (on the map or in the crew list) to open a game-style dialog: a large bust portrait at the bottom left, a name plate, and a text box that types out letter by letter. The first line comes from live data (status and summary); the rest are random lines from `js/dialog.js`, which you can edit freely. Click, Space or Enter advances; Esc or a click outside closes it. The typing blip follows the music on/off button. The UI lives in `js/dialog-ui.js`, the portraits in `assets/portraits/`.
+
 ## Status
 
 `status.json` is refreshed by `update_status.py` on the owner's machine. The script reads local agent activity and writes `status.json` beside itself; it does not run in GitHub Actions. Optional short summaries live in `summaries.json`. The page reloads `status.json` about once a minute.
