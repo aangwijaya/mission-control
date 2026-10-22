@@ -2,7 +2,7 @@
 
 A chibi cyberpunk mini city, drawn isometric, that shows the owner's AI agents as animated characters on a canvas map.
 
-A static site (plain HTML, CSS, and JavaScript, no build step). The page (`index.html`, `js/neohq.js`, `css/neohq.css`) is a Neo HQ city: a Mega Man X style Hunter Base cutaway (command desks, holo table, servers, charge capsules), a power core plaza, two teleporters, neon buildings, hover cars, drones, rain, and BIP, the mascot drone that patrols inside the base. Crew members who are working go to the command desks, standby crew roam the city or teleport, and offline crew charge in the capsules. Live status comes from `status.json`.
+A static site (plain HTML, CSS, and JavaScript, no build step). The page (`index.html`, `js/neohq.js`, `css/neohq.css`) is a Neo HQ city: a Mega Man X style Hunter Base cutaway (command desks, teleportation chamber, servers, charge capsules), a holo table plaza, neon buildings, hover cars, drones, rain, and BIP, the mascot drone that patrols inside the base. Crew members who are working go to the command desks, standby crew roam the city or teleport from anywhere into the chamber in the base, and offline crew charge in the capsules. Live status comes from `status.json`.
 
 The previous top-down HQ is still available at `classic.html` (`js/villagemegax.js`).
 

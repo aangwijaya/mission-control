@@ -1,10 +1,10 @@
 /* NEO HQ · Mission Control versi kota mini isometrik.
    Kota cyberpunk chibi di atas alas diorama: markas Hunter Base (Command Desk, Holo Table, server, kapsul charge),
-   plaza power core, dua teleporter, gedung neon, mobil terbang, drone, hujan, dan maskot BIP yang patroli di dalam markas.
+   teleportation chamber di markas, meja holo di plaza, gedung neon, mobil terbang, drone, hujan, dan maskot BIP yang patroli di dalam markas.
    Semua gedung/prop digambar prosedural di canvas 2D; kru pakai sheet assets/sprites/<id>_kairo.png (kairo.json), diperkecil 50%.
    Status dari status.json (+ summaries.json), dicek tiap 60 detik, lokasi lewat <meta name="vmx-data"> seperti versi lama.
      kerja  -> ke Command Desk / Holo Table di markas
-     santai -> keliling kota, nongkrong di plaza, atau teleport ke pad seberang
+     santai -> keliling kota, nongkrong di plaza, atau teleport pulang ke chamber dari mana saja
      tidur  -> masuk kapsul charge
    URL: ?demo=1 status contoh. Versi lama (top-down) ada di classic.html. */
 
@@ -429,12 +429,13 @@ for (const w of WALLS) {
   } });
 }
 const DESKS = [[2, 2], [4, 2], [6, 2]];
-const TABLE = R(3, 4, 5, 6);
+const CHAMBER = R(4, 4, 6, 6);   // teleportation chamber: crew beam out anywhere and land here
+const CH_X = 5, CH_Y = 5, CH_Z = 12;
+const onChamber = (x, y) => x > CHAMBER.x0 + 0.2 && x < CHAMBER.x1 - 0.2 && y > CHAMBER.y0 + 0.2 && y < CHAMBER.y1 - 0.2;
 const SERVERS = [[1, 4], [1, 5], [1, 6]];
 const CAPS = [[8, 1], [8, 2], [8, 5], [8, 6], [16, 10], [16, 11], [16, 12]];
-const PADS = [[7, 5], [12, 11]];
-const CORE = R(14, 11, 16, 13);
-const SPOTS = [[2, 3, "b"], [4, 3, "b"], [6, 3, "b"], [3, 6, "b"], [4, 6, "b"], [5, 5, "bl"], [5, 4, "bl"]];
+const TABLE = R(14, 11, 16, 13);   // holo map table, out on the plaza
+const SPOTS = [[2, 3, "b"], [4, 3, "b"], [6, 3, "b"], [14, 13, "b"], [15, 13, "b"], [2, 5, "bl"], [2, 6, "bl"]];
 
 function drawDesk(x, y, seed) {
   box(x + 0.1, y + 0.15, x + 0.9, y + 0.7, 0, 16, "#e8eeff", "#a9b8ee", "#7f90d4", "rgba(255,255,255,.7)");
@@ -510,52 +511,77 @@ function capsuleFront(x, y, used) {
   g.restore();
   if (used) glow(c[0], c[1] - 26, 22, 34, "#35f2ff", 0.18);
 }
-function drawPad(x, y, beam) {
-  const c = P(x + 0.5, y + 0.5);
-  g.fillStyle = "#5c6cb0"; g.beginPath(); g.ellipse(c[0], c[1], 22, 11, 0, 0, Math.PI * 2); g.fill();
-  g.fillStyle = "#dfe7ff"; g.beginPath(); g.ellipse(c[0], c[1] - 4, 22, 11, 0, 0, Math.PI * 2); g.fill();
-  g.fillStyle = "#0b1636"; g.beginPath(); g.ellipse(c[0], c[1] - 5, 15, 7.5, 0, 0, Math.PI * 2); g.fill();
-  for (let k = 0; k < 8; k++) {
-    const a = k / 8 * Math.PI * 2 + t * 1.5, on = (k + Math.floor(t * 8)) % 8 < 3;
-    g.fillStyle = on ? "#35f2ff" : "#1b3b6a"; g.fillRect(c[0] + Math.cos(a) * 18 - 1.5, c[1] - 4 + Math.sin(a) * 9 - 1.5, 3, 3);
-  }
-  glow(c[0], c[1] - 5, 26, 13, "#35f2ff", 0.5 + 0.2 * Math.sin(t * 3));
-  if (beam > 0) {
-    g.save(); g.globalCompositeOperation = "lighter"; g.globalAlpha = Math.min(1, beam);
-    const gr = g.createLinearGradient(0, c[1] - 100, 0, c[1]); gr.addColorStop(0, "rgba(53,242,255,0)"); gr.addColorStop(1, "rgba(160,250,255,.6)");
-    g.fillStyle = gr; g.fillRect(c[0] - 12, c[1] - 100, 24, 96);
-    for (let k = 0; k < 3; k++) { const ph = (t * 1.4 + k / 3) % 1; g.strokeStyle = `rgba(160,250,255,${1 - ph})`; g.lineWidth = 2; g.beginPath(); g.ellipse(c[0], c[1] - 6 - ph * 70, 15, 7, 0, 0, Math.PI * 2); g.stroke(); }
-    g.restore();
-  }
+function cylinder(cx0, cy0, rx, ry, z0, h, side, top, edge) {
+  // upright elliptic drum in screen space (iso circle), z0..z0+h above ground point (cx0, cy0)
+  g.fillStyle = side; g.beginPath(); g.ellipse(cx0, cy0 - z0, rx, ry, 0, 0, Math.PI); g.lineTo(cx0 - rx, cy0 - z0 - h); g.ellipse(cx0, cy0 - z0 - h, rx, ry, 0, Math.PI, 0, true); g.closePath(); g.fill();
+  g.fillStyle = top; g.beginPath(); g.ellipse(cx0, cy0 - z0 - h, rx, ry, 0, 0, Math.PI * 2); g.fill();
+  if (edge) { g.strokeStyle = edge; g.lineWidth = 1; g.beginPath(); g.ellipse(cx0, cy0 - z0 - h, rx, ry, 0, 0, Math.PI); g.stroke(); }
 }
-function drawCore() {
-  const r = CORE, c = P((r.x0 + r.x1) / 2, (r.y0 + r.y1) / 2);
-  box(r.x0, r.y0, r.x1, r.y1, 0, 10, "#2a2357", "#3a3072", "#221d4a", "rgba(53,242,255,.6)");
-  g.fillStyle = "#dfe7ff"; g.beginPath(); g.ellipse(c[0], c[1] - 10, 40, 20, 0, 0, Math.PI * 2); g.fill();
-  g.fillStyle = "#3b6cff"; g.beginPath(); g.ellipse(c[0], c[1] - 12, 30, 15, 0, 0, Math.PI * 2); g.fill();
-  const top = c[1] - 160, bot = c[1] - 14, pulse = 0.5 + 0.5 * Math.sin(t * 3);
-  const gr = g.createLinearGradient(c[0] - 18, 0, c[0] + 18, 0);
-  gr.addColorStop(0, "#0e3a66"); gr.addColorStop(0.35, "#35f2ff"); gr.addColorStop(0.5, "#f2ffff"); gr.addColorStop(0.65, "#35f2ff"); gr.addColorStop(1, "#0e3a66");
-  g.fillStyle = gr; g.fillRect(c[0] - 18, top, 36, bot - top);
-  g.save(); g.beginPath(); g.rect(c[0] - 18, top, 36, bot - top); g.clip();
-  for (let k = 0; k < 6; k++) { const y = bot - ((t * 50 + k * 26) % (bot - top)); g.fillStyle = "rgba(255,255,255,.55)"; g.fillRect(c[0] - 18, y, 36, 3); }
-  g.restore();
-  g.fillStyle = "#cfd9ff"; g.beginPath(); g.ellipse(c[0], top, 22, 11, 0, 0, Math.PI * 2); g.fill();
-  g.fillStyle = "#7e8fd0"; g.fillRect(c[0] - 22, top - 10, 44, 10);
-  g.fillStyle = "#dfe7ff"; g.beginPath(); g.ellipse(c[0], top - 10, 22, 11, 0, 0, Math.PI * 2); g.fill();
-  for (let k = -1; k <= 1; k++) { g.fillStyle = "#ff3ea5"; g.fillRect(c[0] + k * 12 - 2, top - 26, 4, 14); }
-  glow(c[0], (top + bot) / 2, 70, 110, "#35f2ff", 0.3 + 0.2 * pulse);
-  g.save(); g.globalCompositeOperation = "lighter";
-  for (let k = 0; k < 3; k++) {
-    const y = top + 30 + k * 40 + Math.sin(t * 1.5 + k) * 4;
-    g.strokeStyle = k === 1 ? "rgba(255,62,165,.8)" : "rgba(53,242,255,.8)"; g.lineWidth = 2;
-    g.setLineDash([10, 6]); g.lineDashOffset = (k % 2 ? 1 : -1) * t * 40;
-    g.beginPath(); g.ellipse(c[0], y, 46 - k * 4, 16 - k, 0, 0, Math.PI * 2); g.stroke();
+let chBeam = 0;   // extra beam flare while someone lands in the chamber
+/* back half: stepped platform, pillars, curved back panel (drawn behind anyone standing on the pad) */
+function chamberBack() {
+  const c = P(CH_X, CH_Y), pulse = 0.5 + 0.5 * Math.sin(t * 2.4);
+  // low curved back plate (open frame, so the desks behind stay visible) with hoses into the floor
+  const L = P(CH_X - 0.95, CH_Y + 0.35), Rr = P(CH_X + 0.35, CH_Y - 0.95), H = 34;
+  g.fillStyle = "#2a3366"; g.beginPath(); g.moveTo(L[0], L[1]); g.quadraticCurveTo(c[0], c[1] - 40, Rr[0], Rr[1]); g.lineTo(Rr[0], Rr[1] - H); g.quadraticCurveTo(c[0], c[1] - 40 - H, L[0], L[1] - H); g.closePath(); g.fill();
+  g.strokeStyle = `rgba(53,242,255,${0.6 + 0.3 * pulse})`; g.lineWidth = 2; g.beginPath(); g.moveTo(L[0], L[1] - H + 6); g.quadraticCurveTo(c[0], c[1] - 34 - H, Rr[0], Rr[1] - H + 6); g.stroke();
+  for (const q of [L, Rr]) {
+    g.fillStyle = "#3d4a8c"; g.fillRect(q[0] - 4, q[1] - H - 8, 8, H + 8);
+    g.fillStyle = (Math.floor(t * 3) % 2) ? "#ff3ea5" : "#35f2ff"; g.fillRect(q[0] - 1, q[1] - H - 4, 2, 6);
+    g.strokeStyle = "#141a3c"; g.lineWidth = 3; g.beginPath(); g.moveTo(q[0], q[1] - 14); g.quadraticCurveTo(q[0] + (q === L ? -16 : 16), q[1] - 4, q[0] + (q === L ? -8 : 8), q[1] + 6); g.stroke();
   }
-  g.setLineDash([]);
-  for (let k = 0; k < 18; k++) { const ph = (t * 0.35 + hash(k) ) % 1; const a = hash(k, 2) * Math.PI * 2; g.fillStyle = `rgba(180,250,255,${1 - ph})`; g.fillRect(c[0] + Math.cos(a) * (30 + ph * 20), bot - ph * 170, 2, 2); }
+  // stepped platform: wide bottom step, top pad
+  cylinder(c[0], c[1], 46, 23, 0, 5, "#5c6cb0", "#a9b8ee", "rgba(255,255,255,.5)");
+  cylinder(c[0], c[1], 36, 18, 5, 7, "#7f90d4", "#dfe7ff", "rgba(255,255,255,.7)");
+  g.fillStyle = "#0b1636"; g.beginPath(); g.ellipse(c[0], c[1] - CH_Z, 28, 14, 0, 0, Math.PI * 2); g.fill();
+  g.strokeStyle = `rgba(53,242,255,${0.7 + 0.3 * pulse})`; g.lineWidth = 2; g.setLineDash([5, 4]); g.lineDashOffset = -t * 18;
+  g.beginPath(); g.ellipse(c[0], c[1] - CH_Z, 23, 11.5, 0, 0, Math.PI * 2); g.stroke(); g.setLineDash([]);
+  for (let k = 0; k < 10; k++) { const a = k / 10 * Math.PI * 2, on = (k + Math.floor(t * 6)) % 5 === 0; g.fillStyle = on ? "#f2ffff" : "#35f2ff"; g.fillRect(c[0] + Math.cos(a) * 41 - 1, c[1] - 3 + Math.sin(a) * 20.5 - 1, 2, 2); }
+  glow(c[0], c[1] - CH_Z, 34, 16, "#35f2ff", 0.45 + 0.25 * pulse + chBeam * 0.3);
+}
+/* emitter head: low dark-metal hood with a lit rim, lens glowing underneath */
+function emitterHead(x, y, f) {
+  const RX = 30, RY = 15, RIM = 8, base = y - RIM;
+  // lens underneath: only its front lip shows, plus light spilling down
+  g.save(); g.globalCompositeOperation = "lighter";
+  g.fillStyle = `rgba(200,255,255,${0.5 + 0.3 * f})`; g.beginPath(); g.ellipse(x, y + 1, 24, 9.5, 0, 0, Math.PI); g.fill();
   g.restore();
-  neonText(`POWER CORE ${96 + Math.round(3 * pulse)}%`, c[0], top - 44, "#35f2ff", 7, 1);
+  glow(x, y + 6, 38, 15, "#e0ffff", 0.5 + 0.35 * f);
+  // rim drum with a thin light strip that chases around the front
+  cylinder(x, y, RX, RY, 0, RIM, "#1e2650", "#2c3670", "rgba(53,242,255,.7)");
+  for (let k = 0; k < 12; k++) {
+    const a = 0.12 * Math.PI + k / 11 * 0.76 * Math.PI, on = (k + Math.floor(t * 8)) % 6 < 2;
+    g.fillStyle = on ? "#f2ffff" : "#35f2ff"; g.globalAlpha = on ? 1 : 0.45 + 0.25 * f;
+    g.fillRect(x + Math.cos(a) * RX - 1.5, y - 4 + Math.sin(a) * RY - 1, 3, 2);
+  }
+  g.globalAlpha = 1;
+  // low cap: a shallow step instead of a dome
+  cylinder(x, base, 20, 10, 0, 5, "#262f62", "#333e7c", "rgba(120,140,255,.5)");
+  g.strokeStyle = "rgba(53,242,255,.35)"; g.lineWidth = 1; g.beginPath(); g.ellipse(x, base - 5, 13, 6.5, 0, 0, Math.PI * 2); g.stroke();
+  // docking collar for the gantry arm + small status light
+  cylinder(x, base - 5, 7, 3.5, 0, 5, "#1e2650", "#2c3670");
+  g.fillStyle = "#ff3ea5"; g.fillRect(x - 1, base - 12, 2, 2);
+  glow(x, base - 11, 7, 5, "#ff3ea5", 0.4 + 0.4 * Math.max(0, Math.sin(t * 4)));
+}
+/* front half: overhead emitter + light column (drawn over anyone standing on the pad); the head hangs above the desk crew's heads */
+function chamberFront() {
+  const c = P(CH_X, CH_Y), top = c[1] - 112, bot = c[1] - CH_Z, f = Math.min(1, chBeam), idle = 0.3 + 0.08 * Math.sin(t * 3);
+  g.save(); g.globalCompositeOperation = "lighter";
+  const w = 22 + 6 * f, gr = g.createLinearGradient(c[0] - w, 0, c[0] + w, 0);
+  gr.addColorStop(0, "rgba(53,242,255,0)"); gr.addColorStop(0.3, `rgba(53,242,255,${idle + 0.3 * f})`); gr.addColorStop(0.5, `rgba(220,255,255,${idle + 0.45 * f})`); gr.addColorStop(0.7, `rgba(53,242,255,${idle + 0.3 * f})`); gr.addColorStop(1, "rgba(53,242,255,0)");
+  g.fillStyle = gr; g.fillRect(c[0] - w, top, w * 2, bot - top);
+  // falling streaks, like the beam in the reference
+  for (let k = 0; k < 9; k++) { const x = c[0] - w * 0.8 + hash(k, 3) * w * 1.6, len = 18 + hash(k) * 30, y = top + ((t * (70 + hash(k, 9) * 60) + hash(k, 5) * 100) % (bot - top)); g.fillStyle = `rgba(230,255,255,${0.25 + 0.35 * f})`; g.fillRect(x, y, 1.5, Math.min(len, bot - y)); }
+  for (let k = 0; k < 2 + Math.round(f * 2); k++) { const ph = (t * 1.2 + k / 3) % 1; g.strokeStyle = `rgba(170,250,255,${(1 - ph) * (0.4 + 0.5 * f)})`; g.lineWidth = 1.5; g.beginPath(); g.ellipse(c[0], bot - ph * 80, 24 - ph * 4, 12 - ph * 2, 0, 0, Math.PI * 2); g.stroke(); }
+  g.restore();
+  // emitter hangs from a gantry arm that reaches over from the back wall
+  const wall = P(1, CH_Y, 120), hub = [c[0], top - 20];   // anchored on the left side wall, clear of the big screen
+  g.strokeStyle = "#2a3366"; g.lineWidth = 6; g.beginPath(); g.moveTo(...wall); g.lineTo(wall[0], wall[1] + 8); g.lineTo(...hub); g.stroke();
+  g.strokeStyle = "#3d4a8c"; g.lineWidth = 2; g.beginPath(); g.moveTo(wall[0], wall[1] - 2); g.lineTo(hub[0], hub[1] - 4); g.stroke();
+  g.strokeStyle = "#141a3c"; g.lineWidth = 2.5; g.beginPath(); g.moveTo(wall[0] - 4, wall[1] + 12); g.quadraticCurveTo((wall[0] + hub[0]) / 2, hub[1] + 6, hub[0] + 8, hub[1] + 4); g.stroke();
+  for (let k = 1; k < 4; k++) { const q = [wall[0] + (hub[0] - wall[0]) * k / 4, wall[1] + 4 + (hub[1] - wall[1] - 4) * k / 4]; g.fillStyle = (Math.floor(t * 5) + k) % 3 ? "#35f2ff" : "#ff3ea5"; g.fillRect(q[0] - 1, q[1] - 1, 2, 2); }
+  emitterHead(c[0], top, f);
+  neonText("TELEPORT", c[0], top - 34, "#35f2ff", 6, 0.85 + 0.15 * Math.sin(t * 2));
 }
 function drawLamp(x, y, col) {
   const b = P(x + 0.5, y + 0.5), tp = P(x + 0.5, y + 0.5, 56);
@@ -605,15 +631,15 @@ function drawCafe(x, y) {
 const add = (x0, y0, x1, y1, draw, blk = true) => { if (blk) block(R(x0, y0, x1, y1)); statics.push({ x0, y0, x1, y1, draw }); };
 DESKS.forEach(([x, y], i) => add(x, y, x + 1, y + 1, () => drawDesk(x, y, i + 1)));
 add(TABLE.x0, TABLE.y0, TABLE.x1, TABLE.y1, () => drawTable(TABLE));
+block(CHAMBER);
+statics.push({ x0: CHAMBER.x0, y0: CHAMBER.y0, x1: CHAMBER.x1, y1: CHAMBER.y0 + 0.2, draw: chamberBack });
+statics.push({ x0: CHAMBER.x0, y0: CHAMBER.y1 - 0.2, x1: CHAMBER.x1, y1: CHAMBER.y1, draw: chamberFront });
 SERVERS.forEach(([x, y], i) => add(x, y, x + 1, y + 1, () => drawServer(x, y, i + 3)));
 CAPS.forEach(([x, y], i) => {
   block(R(x, y, x + 1, y + 1));
   statics.push({ x0: x, y0: y, x1: x + 1, y1: y + 0.2, draw: () => capsuleBack(x, y) });
   statics.push({ x0: x, y0: y + 0.8, x1: x + 1, y1: y + 1, draw: () => capsuleFront(x, y, capUsed[i]) });
 });
-const padBeam = [0, 0];
-PADS.forEach(([x, y], i) => statics.push({ x0: x, y0: y, x1: x + 1, y1: y + 0.25, draw: () => drawPad(x, y, padBeam[i]) }));
-add(CORE.x0, CORE.y0, CORE.x1, CORE.y1, drawCore);
 [[12, 7, "#ffb547"], [12, 13, "#ff3ea5"], [0, 10, "#ffb547"], [15, 7, "#35f2ff"], [9, 13, "#35f2ff"]].forEach(([x, y, c]) => add(x, y, x + 1, y + 1, () => drawLamp(x, y, c)));
 [[14, 7, "#35f2ff"], [4, 11, "#ff3ea5"]].forEach(([x, y, c]) => add(x, y, x + 1, y + 1, () => drawVending(x, y, c)));
 [[13, 13]].forEach(([x, y]) => add(x, y, x + 1, y + 1, () => drawBench(x, y)));
@@ -688,6 +714,7 @@ function think(a) {
   if (a.status === "work") {
     const [sx, sy, f] = SPOTS[a.slot % SPOTS.length];
     if (tx === sx && ty === sy) { a.mode = "work"; a.face = f; return; }
+    if (inHQ(sx, sy) && !inHQ(tx, ty) && Math.random() < 0.6) { a.mode = "tpout"; a.ft = 0; return; }   // called in: beam home
     return goTo(a, sx, sy, () => { a.mode = "work"; a.face = f; });
   }
   if (a.status === "sleep") {
@@ -695,10 +722,8 @@ function think(a) {
     return goTo(a, cx, cy, () => { a.mode = "charge"; capUsed[ci] = true; });
   }
   const r = Math.random();
-  if (r < 0.18) {
-    const pi = Math.random() < 0.5 ? 0 : 1, [px, py] = PADS[pi];
-    return goTo(a, px, py, () => { a.mode = "tpout"; a.ft = 0; a.pad = pi; padBeam[pi] = 1.4; });
-  }
+  // out in the city: sometimes beam straight back to the HQ chamber instead of walking
+  if (r < 0.18 && !inHQ(tx, ty)) { a.mode = "tpout"; a.ft = 0; return; }
   const [gx, gy] = r < 0.55 ? HANG[(Math.random() * HANG.length) | 0] : randFree();
   goTo(a, gx, gy, () => { a.mode = "idle"; a.wait = 2 + Math.random() * 4; });
 }
@@ -727,9 +752,9 @@ function update(a, dt) {
   a.ft += dt * 60;
   if (a.mode === "tpin" || a.mode === "tpout") {
     const n = a.anim.seq.tp.length, i = Math.floor(a.ft / (T.tp + 1));
-    if (a.mode === "tpin") padBeam[a.pad] = Math.max(padBeam[a.pad], 0.8);
+    if (a.mode === "tpin" && a.ft >= 0) chBeam = Math.max(chBeam, 1);
     if (i >= n) {
-      if (a.mode === "tpout") { const np = 1 - a.pad, [px, py] = PADS[np]; a.x = px + 0.5; a.y = py + 0.5; a.pad = np; a.mode = "tpin"; a.ft = 0; padBeam[np] = 1.4; }
+      if (a.mode === "tpout") { a.x = CH_X; a.y = CH_Y; a.mode = "tpin"; a.ft = -20; }
       else { a.mode = "idle"; a.wait = 0.5; }
     }
     return;
@@ -763,9 +788,18 @@ function frameOf(a) {
 }
 function drawAgent(a) {
   if (a.mode === "charge") { /* inside capsule: drawn by its own glass */ }
-  const [sx, sy] = P(a.x, a.y);
+  const [sx, sy] = P(a.x, a.y, onChamber(a.x, a.y) ? CH_Z : 0);
   const tp = a.mode === "tpin" || a.mode === "tpout";
   if (tp && a.ft < 0) { a.sx = null; return; }
+  if (a.mode === "tpout") {
+    // beam column wherever they stand (no pad needed any more)
+    const k = Math.min(1, a.ft / 30), al = Math.sin(k * Math.PI) * 0.9 + 0.1;
+    g.save(); g.globalCompositeOperation = "lighter";
+    const gr = g.createLinearGradient(sx - 12, 0, sx + 12, 0); gr.addColorStop(0, "rgba(53,242,255,0)"); gr.addColorStop(0.5, `rgba(200,255,255,${0.55 * al})`); gr.addColorStop(1, "rgba(53,242,255,0)");
+    g.fillStyle = gr; g.fillRect(sx - 12, sy - 140, 24, 140);
+    g.strokeStyle = `rgba(160,250,255,${0.8 * al})`; g.lineWidth = 1.5; g.beginPath(); g.ellipse(sx, sy, 13 + 4 * k, 6 + 2 * k, 0, 0, 7); g.stroke();
+    g.restore(); glow(sx, sy, 22, 10, "#35f2ff", 0.6 * al);
+  }
   if (!tp) {
     g.fillStyle = "rgba(0,0,0,.45)"; g.beginPath(); g.ellipse(sx, sy, 9, 3.5, 0, 0, 7); g.fill();
     const col = a.status === "work" ? "#5cf08a" : a.status === "idle" ? "#ffb547" : "#7d8cff";
@@ -988,7 +1022,7 @@ function drawSky() {
 function render(dt) {
   panStep(dt);
   t += RM ? dt * 0.3 : dt;
-  for (let i = 0; i < 2; i++) padBeam[i] = Math.max(0, padBeam[i] - dt * 0.8);
+  chBeam = Math.max(0, chBeam - dt * 0.8);
   for (const a of crew) update(a, dt);
   bipUpdate(dt);
   cx.setTransform(DPR, 0, 0, DPR, 0, 0); cx.imageSmoothingEnabled = false;
@@ -998,7 +1032,7 @@ function render(dt) {
   cx.imageSmoothingEnabled = false;
   cx.drawImage(GROUND, GX0, GY0);
   // wet neon reflections that breathe
-  glow(...P(15, 12), 180, 90, "#35f2ff", 0.12 + 0.04 * Math.sin(t * 3));
+  glow(...P(15, 12), 140, 70, "#35f2ff", 0.08 + 0.03 * Math.sin(t * 3));
   // depth-sorted world objects
   const objs = statics.slice();
   for (const a of crew) objs.push({ x0: a.x - 0.2, y0: a.y - 0.2, x1: a.x + 0.2, y1: a.y + 0.2, draw: () => drawAgent(a) });
@@ -1238,9 +1272,8 @@ async function boot() {
     const an = kairo.agents[def.id]; if (!an) return;
     const src = new Image(); src.src = "assets/sprites/" + an.sheet; await src.decode().catch(() => {});
     const img = src; // full-res sheet, drawn at half size so it stays sharp when zoomed in
-    const pad = i % 2;
     crew.push({ id: def.id, def, img, anim: an, status: "idle", summary: "", seed: hash(i, 4),
-      x: PADS[pad][0] + 0.5, y: PADS[pad][1] + 0.5, pad, mode: "tpin", ft: -i * 26, path: [], wait: 0, face: "f" });
+      x: CH_X, y: CH_Y, mode: "tpin", ft: -i * 40, path: [], wait: 0, face: "f" });
   }));
   crew.sort((a, b) => AGENTS.findIndex((d) => d.id === a.id) - AGENTS.findIndex((d) => d.id === b.id));
   { const src = new Image(); src.src = "assets/props/drone.png"; await src.decode().catch(() => {});
