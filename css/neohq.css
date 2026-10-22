@@ -39,6 +39,7 @@ a{color:var(--cyan)}
 .tool{font-family:var(--f-disp);font-size:8px;letter-spacing:.06em;color:var(--cyan);background:rgba(17,11,43,.85);border:1px solid var(--cyan);padding:8px 9px;cursor:pointer;
   clip-path:polygon(6px 0,100% 0,100% calc(100% - 6px),calc(100% - 6px) 100%,0 100%,0 6px);box-shadow:inset 0 0 10px rgba(53,242,255,.25)}
 .tool:hover{background:rgba(53,242,255,.15)}
+.tool:disabled,.tool:disabled:hover{color:#4a5a78;border-color:#2c3550;background:rgba(17,11,43,.6);cursor:default;box-shadow:none}
 .tool[aria-pressed="true"]{color:#14051f;background:var(--cyan);box-shadow:0 0 12px rgba(53,242,255,.8)}
 .tool.hot{border-color:var(--magenta);color:var(--magenta)}
 .tool.hot[aria-pressed="true"]{background:var(--magenta);color:#14051f;box-shadow:0 0 12px rgba(255,62,165,.8)}

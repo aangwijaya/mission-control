@@ -986,20 +986,73 @@ const cam = { x: P(MW / 2, MH / 2)[0], y: P(MW / 2, MH / 2)[1] - 60, z: 1 };
 const PAN_S = 0.35;
 let pan = null;
 function panTo(wx, wy, sy = VH / 2) {
-  if (matchMedia("(prefers-reduced-motion:reduce)").matches) { cam.x = wx; cam.y = wy - (sy - VH / 2) / cam.z; pan = null; return; }
+  if (matchMedia("(prefers-reduced-motion:reduce)").matches) { cam.x = clampCX(wx); cam.y = clampCY(wy - (sy - VH / 2) / cam.z); pan = null; return; }
   pan = { fx: cam.x, fy: cam.y, wx, wy, sy, k: 0 };
 }
 function panStep(dt) {
   if (!pan) return;
   pan.k = Math.min(1, pan.k + Math.min(dt, 1 / 30) / PAN_S);   // a slow frame (dialog/portrait decode) must not skip half the pan
   const k = pan.k, e = k < 0.5 ? 4 * k * k * k : 1 - Math.pow(-2 * k + 2, 3) / 2;   // ease-in-out cubic: no sudden first step
-  const ty = pan.wy - (pan.sy - VH / 2) / cam.z;
-  cam.x = pan.fx + (pan.wx - pan.fx) * e; cam.y = pan.fy + (ty - pan.fy) * e;
+  // target is clamped to the scene (start point already is), so the eased path never leaves the base and never overshoots an edge
+  const tx = clampCX(pan.wx), ty = clampCY(pan.wy - (pan.sy - VH / 2) / cam.z);
+  cam.x = pan.fx + (tx - pan.fx) * e; cam.y = pan.fy + (ty - pan.fy) * e;
   if (pan.k >= 1) pan = null;
 }
 let VW = 0, VH = 0, DPR = 1;
 function resize() { DPR = Math.min(2, devicePixelRatio || 1); VW = cv.clientWidth; VH = cv.clientHeight; cv.width = VW * DPR; cv.height = VH * DPR; }
-function fit() { const wpx = (MW + MH) * 32 + 40, hpx = (MW + MH) * 16 + 320; cam.z = Math.max(0.35, Math.min(2, Math.max(Math.min(VW / wpx, VH / hpx) * 1.25, VW < 720 ? 0.95 : 0))); cam.x = P(MW / 2, MH / 2)[0]; cam.y = P(MW / 2, MH / 2)[1] - 90; }
+/* ---------- zoom limits + pan clamp ----------
+   SCENE = world-space box of everything drawn (ground slab + tallest towers, measured), padded a few px.
+   Min zoom: the base must fill the screen. "contain" (whole base visible) is used on landscape screens; on tall/narrow
+   screens contain would leave huge empty bands above/below, so it is raised to 75% of "cover" there.
+   Max zoom 4 (unchanged). Buttons + wheel move between ZSTEPS discrete levels; pinch is continuous but clamped. */
+const SCENE = { x0: -452, y0: -176, x1: 548, y1: 546 }, SW = SCENE.x1 - SCENE.x0, SH = SCENE.y1 - SCENE.y0;
+const ZMAX = 4, ZSTEPS = 5, PAN_SLACK = 40;   // PAN_SLACK: screen px the base may be pushed past the edge (panels overlap the edges)
+let zMin = 1, zLevels = [1, ZMAX], zAnim = null;
+function zoomLimits() {
+  if (!VW || !VH) return;
+  const contain = Math.min(VW / SW, VH / SH), cover = Math.max(VW / SW, VH / SH);
+  zMin = Math.min(ZMAX, Math.max(contain, cover * 0.75));
+  zLevels = Array.from({ length: ZSTEPS }, (_, i) => zMin * Math.pow(ZMAX / zMin, i / (ZSTEPS - 1)));
+}
+const clampZ = (z) => Math.max(zMin, Math.min(ZMAX, z));
+// camera centre limits for the current zoom: the view may not leave the scene box (+ slack); if the view is
+// larger than the scene on an axis the camera is locked to the scene centre on that axis
+const clampAx = (v, a0, a1, half) => { const s = PAN_SLACK / cam.z; return half * 2 >= a1 - a0 + 2 * s ? (a0 + a1) / 2 : Math.max(a0 - s + half, Math.min(a1 + s - half, v)); };
+const clampCX = (x) => clampAx(x, SCENE.x0, SCENE.x1, VW / 2 / cam.z);
+const clampCY = (y) => clampAx(y, SCENE.y0, SCENE.y1, VH / 2 / cam.z);
+function clampCam() { cam.z = clampZ(cam.z); cam.x = clampCX(cam.x); cam.y = clampCY(cam.y); }
+function zoomTo(z) {   // short eased zoom about the screen centre
+  z = clampZ(z);
+  if (Math.abs(z - cam.z) < 1e-4) { zAnim = null; cam.z = z; zoomUI(); return; }
+  if (matchMedia("(prefers-reduced-motion:reduce)").matches) { cam.z = z; zAnim = null; clampCam(); zoomUI(); return; }
+  zAnim = { f: cam.z, to: z, k: 0 }; zoomUI();
+}
+function zoomStep(dir) {   // next discrete level above/below where we are (or are heading)
+  const cur = zAnim ? zAnim.to : cam.z, eps = 1e-3;
+  const next = dir > 0 ? zLevels.find((l) => l > cur * (1 + eps)) : [...zLevels].reverse().find((l) => l < cur * (1 - eps));
+  if (next != null) zoomTo(next);
+}
+function zoomAnimStep(dt) {
+  if (!zAnim) return;
+  zAnim.k = Math.min(1, zAnim.k + Math.min(dt, 1 / 30) / 0.18);
+  const k = zAnim.k, e = 1 - Math.pow(1 - k, 3);
+  cam.z = zAnim.f * Math.pow(zAnim.to / zAnim.f, e);   // geometric interpolation feels even at every zoom
+  if (zAnim.k >= 1) { cam.z = zAnim.to; zAnim = null; }
+}
+let zUI = "";
+function zoomUI() {
+  const z = zAnim ? zAnim.to : cam.z, st = (z <= zMin * 1.001 ? "a" : "") + (z >= ZMAX * 0.999 ? "b" : "");
+  if (st === zUI) return; zUI = st;
+  document.getElementById("zOut").disabled = st.includes("a");
+  document.getElementById("zIn").disabled = st.includes("b");
+}
+function fit() {
+  const wpx = (MW + MH) * 32 + 40, hpx = (MW + MH) * 16 + 320;
+  zAnim = null; pan = null;
+  cam.z = clampZ(Math.min(2, Math.max(Math.min(VW / wpx, VH / hpx) * 1.25, VW < 720 ? 0.95 : 0)));
+  cam.x = P(MW / 2, MH / 2)[0]; cam.y = P(MW / 2, MH / 2)[1] - 90; clampCam(); zoomUI();
+}
+function onResize() { resize(); zoomLimits(); if (zAnim) zAnim.to = clampZ(zAnim.to); clampCam(); zUI = ""; zoomUI(); }
 const sky = { stars: Array.from({ length: 90 }, () => [Math.random(), Math.random() * 0.6, Math.random()]), city: Array.from({ length: 40 }, (_, i) => [i / 40, 0.12 + hash(i, 3) * 0.32, hash(i, 5)]) };
 function drawSky() {
   const S = SKY, gr = cx.createLinearGradient(0, 0, 0, VH); gr.addColorStop(0, S.sky[0]); gr.addColorStop(0.55, S.sky[1]); gr.addColorStop(1, S.sky[2]);
@@ -1020,7 +1073,9 @@ function drawSky() {
   }
 }
 function render(dt) {
+  zoomAnimStep(dt);
   panStep(dt);
+  clampCam();
   t += RM ? dt * 0.3 : dt;
   chBeam = Math.max(0, chBeam - dt * 0.8);
   for (const a of crew) update(a, dt);
@@ -1099,17 +1154,25 @@ function sortIso(list) {
 
 /* ---------- input ---------- */
 const ptrs = new Map(); let drag = null, moved = 0, pinch0 = 0;
-cv.addEventListener("pointerdown", (e) => { pan = null; cv.setPointerCapture(e.pointerId); ptrs.set(e.pointerId, [e.clientX, e.clientY]); moved = 0; drag = { x: e.clientX, y: e.clientY, cx: cam.x, cy: cam.y }; if (ptrs.size === 2) { const [a, b] = [...ptrs.values()]; pinch0 = Math.hypot(a[0] - b[0], a[1] - b[1]) / cam.z; } cv.classList.add("drag"); });
+cv.addEventListener("pointerdown", (e) => { pan = null; zAnim = null; cv.setPointerCapture(e.pointerId); ptrs.set(e.pointerId, [e.clientX, e.clientY]); moved = 0; drag = { x: e.clientX, y: e.clientY, cx: cam.x, cy: cam.y }; if (ptrs.size === 2) { const [a, b] = [...ptrs.values()]; pinch0 = Math.hypot(a[0] - b[0], a[1] - b[1]) / cam.z; } cv.classList.add("drag"); });
 cv.addEventListener("pointermove", (e) => {
   if (!ptrs.has(e.pointerId)) { cv.classList.toggle("hover", !!hit(e)); return; }
   ptrs.set(e.pointerId, [e.clientX, e.clientY]);
-  if (ptrs.size === 2) { const [a, b] = [...ptrs.values()]; cam.z = clampZ(Math.hypot(a[0] - b[0], a[1] - b[1]) / pinch0); moved = 99; return; }
-  if (drag) { const dx = e.clientX - drag.x, dy = e.clientY - drag.y; moved = Math.max(moved, Math.abs(dx) + Math.abs(dy)); cam.x = drag.cx - dx / cam.z; cam.y = drag.cy - dy / cam.z; }
+  if (ptrs.size === 2) { const [a, b] = [...ptrs.values()]; cam.z = clampZ(Math.hypot(a[0] - b[0], a[1] - b[1]) / pinch0); clampCam(); zoomUI(); moved = 99; return; }
+  if (drag) { const dx = e.clientX - drag.x, dy = e.clientY - drag.y; moved = Math.max(moved, Math.abs(dx) + Math.abs(dy)); cam.x = clampCX(drag.cx - dx / cam.z); cam.y = clampCY(drag.cy - dy / cam.z); }
 });
 const up = (e) => { ptrs.delete(e.pointerId); cv.classList.remove("drag"); if (moved < 6) { const a = hit(e); if (a) pick(a); } drag = ptrs.size ? drag : null; };
 cv.addEventListener("pointerup", up); cv.addEventListener("pointercancel", (e) => { ptrs.delete(e.pointerId); drag = null; });
-cv.addEventListener("wheel", (e) => { e.preventDefault(); cam.z = clampZ(cam.z * (e.deltaY < 0 ? 1.12 : 1 / 1.12)); }, { passive: false });
-const clampZ = (z) => Math.max(0.35, Math.min(4, z));
+// wheel = discrete levels too; trackpads fire dozens of small events, so accumulate and allow one step per 160 ms
+let wheelAcc = 0, wheelT = 0;
+cv.addEventListener("wheel", (e) => {
+  e.preventDefault();
+  const d = e.deltaMode === 1 ? e.deltaY * 33 : e.deltaMode === 2 ? e.deltaY * VH : e.deltaY, now = performance.now();
+  if (Math.sign(d) !== Math.sign(wheelAcc)) wheelAcc = 0;
+  wheelAcc += d;
+  if (Math.abs(wheelAcc) < 40 || now - wheelT < 160) return;
+  zoomStep(wheelAcc < 0 ? 1 : -1); wheelAcc = 0; wheelT = now;
+}, { passive: false });
 function hit(e) {
   const r = cv.getBoundingClientRect(), mx = e.clientX - r.left, my = e.clientY - r.top;
   const wx = cam.x + (mx - VW / 2) / cam.z, wy = cam.y + (my - VH / 2) / cam.z;
@@ -1118,8 +1181,8 @@ function hit(e) {
   if (bip.sx != null && Math.abs(wx - bip.sx) < 14 && Math.abs(wy - bip.sy) < 14) return bip;
   return best;
 }
-document.getElementById("zIn").onclick = () => (cam.z = clampZ(cam.z * 1.25));
-document.getElementById("zOut").onclick = () => (cam.z = clampZ(cam.z / 1.25));
+document.getElementById("zIn").onclick = () => zoomStep(1);
+document.getElementById("zOut").onclick = () => zoomStep(-1);
 document.getElementById("fit").onclick = fit;
 const rainBtn = document.getElementById("rain"); rainBtn.setAttribute("aria-pressed", rainOn);
 rainBtn.onclick = () => { rainOn = !rainOn; rainBtn.setAttribute("aria-pressed", rainOn); };
@@ -1270,8 +1333,9 @@ initDialog({ soundOn: () => musicOn,   // dialog blips follow the music on/off b
 
 /* ---------- boot ---------- */
 async function boot() {
-  resize(); fit();
-  addEventListener("resize", () => { resize(); });
+  onResize(); fit();
+  addEventListener("resize", onResize);
+  addEventListener("orientationchange", () => requestAnimationFrame(onResize));   // some mobile browsers report the new size a frame late
   try { await document.fonts.load('10px "PS2P"'); await document.fonts.load('15px "Pixelify"'); } catch {}
   paintGround();
   const kairo = await fetch("assets/sprites/kairo.json").then((r) => r.json());
