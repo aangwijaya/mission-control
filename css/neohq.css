@@ -126,7 +126,9 @@ a{color:var(--cyan)}
 .npc-hint{position:relative;margin:8px 0 0;padding:6px 8px;font-family:var(--f-body);font-size:14px;line-height:1.35;color:var(--amber);
   background:rgba(255,181,71,.1);border-left:3px solid var(--amber);text-shadow:1px 1px 0 #07051a;cursor:default}
 .npc-hint[hidden]{display:none}
-body.npc-open .crew,body.npc-open .info,body.npc-open .note{visibility:hidden}
+/* hidden at once on open; on close they fade back in place (opacity only, no layout change) instead of popping */
+.crew,.info,.note{transition:opacity .18s ease-out}
+body.npc-open .crew,body.npc-open .info,body.npc-open .note{visibility:hidden;opacity:0;transition:none}
 @keyframes npcIn{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:none}}
 @media (max-width:720px){
   .npc{--pad:max(8px,env(safe-area-inset-left,0px));--bot:calc(8px + env(safe-area-inset-bottom,0px))}
@@ -138,4 +140,4 @@ body.npc-open .crew,body.npc-open .info,body.npc-open .note{visibility:hidden}
   .npc-chat{font-size:9px;padding:6px 10px 5px;right:calc(var(--br,8px) + 10px)}
   .npc-hint{font-size:13px}
 }
-@media (prefers-reduced-motion:reduce){.npc-face,.npc-box,.npc-chat{animation:none}.npc-box.done .npc-next{animation:none}}
+@media (prefers-reduced-motion:reduce){.crew,.info,.note{transition:none}.npc-face,.npc-box,.npc-chat{animation:none}.npc-box.done .npc-next{animation:none}}
