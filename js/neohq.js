@@ -652,9 +652,14 @@ const capUsed = CAPS.map(() => false);
 /* ---------- ground (prerendered once) ---------- */
 const GROUND = document.createElement("canvas");
 const GX0 = -MH * 32 - 8, GY0 = -20, SLAB = 46;
-GROUND.width = (MW + MH) * 32 + 16; GROUND.height = (MW + MH) * 16 + SLAB + 40;
-function paintGround() {
-  g = GROUND.getContext("2d"); g.translate(-GX0, -GY0);
+const GW = (MW + MH) * 32 + 16, GH = (MW + MH) * 16 + SLAB + 40;
+/* HD: lantai di-bake di skala layar (DPR x zoom), bukan 1x lalu diperbesar; dibake ulang 150 ms setelah zoom berhenti */
+let GS = 0, gsWant = 0, gsAt = 0;
+const GS_MAX = 4;
+const groundScale = () => Math.min(GS_MAX, Math.max(1, DPR * cam.z));
+function paintGround(s = groundScale()) {
+  GS = gsWant = s; GROUND.width = Math.ceil(GW * s); GROUND.height = Math.ceil(GH * s);
+  g = GROUND.getContext("2d"); g.setTransform(s, 0, 0, s, -GX0 * s, -GY0 * s);
   // diorama slab
   poly([P(0, MH), P(MW, MH), P(MW, MH, -SLAB), P(0, MH, -SLAB)], "#1a1240");
   poly([P(MW, 0), P(MW, MH), P(MW, MH, -SLAB), P(MW, 0, -SLAB)], "#120c30");
@@ -810,8 +815,9 @@ function drawAgent(a) {
   const bob = a.mode === "charge" ? -5 + Math.sin(t * 2 + a.seed) * 1.5 : 0;
   g.save(); g.translate(Math.round(sx), Math.round(sy + bob)); if (flip) g.scale(-1, 1);
   if (a.mode === "charge") g.globalAlpha = 0.85;
+  const sh = sharpSheet(a.img, 0.5);
   g.imageSmoothingEnabled = true; g.imageSmoothingQuality = "high";
-  g.drawImage(a.img, f * 64, 0, 64, 96, -16, -47, 32, 48);
+  g.drawImage(sh.c, f * 64 * sh.n, 0, 64 * sh.n, 96 * sh.n, -16, -47, 32, 48);
   g.restore();
   a.sx = sx; a.sy = sy;
 }
@@ -857,7 +863,8 @@ function drawBip() {
   const moving = bip.path.length > 0, tilt = moving ? -0.12 * bip.face : 0;
   const flip = bip.spin > 0 ? Math.cos((0.8 - bip.spin) / 0.8 * Math.PI * 4) : 1;
   g.save(); g.translate(Math.round(sx), Math.round(sy - hov)); g.rotate(tilt); g.scale(bip.face * flip, 1);
-  g.drawImage(bip.img, -bip.img.width / 2, -bip.img.height / 2);
+  { const sh = sharpSheet(bip.src, 0.75); g.imageSmoothingEnabled = true; g.imageSmoothingQuality = "high";
+    g.drawImage(sh.c, -bip.img.width / 2, -bip.img.height / 2, bip.img.width, bip.img.height); g.imageSmoothingEnabled = false; }
   g.restore();
   // thruster puff + blinking antenna light
   glow(sx + 6 * bip.face, sy - hov + 6, 6, 4, "#35f2ff", moving ? 0.8 : 0.4);
@@ -999,7 +1006,18 @@ function panStep(dt) {
   if (pan.k >= 1) pan = null;
 }
 let VW = 0, VH = 0, DPR = 1;
-function resize() { DPR = Math.min(2, devicePixelRatio || 1); VW = cv.clientWidth; VH = cv.clientHeight; cv.width = VW * DPR; cv.height = VH * DPR; }
+/* HD: pixel art diperbesar "sharp bilinear" — nearest ke kelipatan bulat dulu, lalu turun halus ke ukuran layar.
+   Piksel tetap kotak tegas tanpa ukuran tak rata, dan tidak blur seperti smoothing langsung. Cache per kelipatan. */
+const SHARP = new Map();
+function sharpSheet(img, k) {
+  const n = Math.max(1, Math.min(4, Math.ceil(k * DPR * cam.z - 0.01)));
+  let m = SHARP.get(img); if (!m) SHARP.set(img, (m = {}));
+  if (!m[n]) { const c = document.createElement("canvas"); c.width = img.width * n; c.height = img.height * n;
+    const q = c.getContext("2d"); q.imageSmoothingEnabled = false; q.drawImage(img, 0, 0, c.width, c.height); m[n] = { c, n }; }
+  return m[n];
+}
+let DPR_CAP = 3, slowT = 0;   // HD: sampai 3x di HP retina, turun ke 2x kalau frame lambat
+function resize() { DPR = Math.min(DPR_CAP, devicePixelRatio || 1); VW = cv.clientWidth; VH = cv.clientHeight; cv.width = VW * DPR; cv.height = VH * DPR; }
 /* ---------- zoom limits + pan clamp ----------
    SCENE = world-space box of everything drawn (ground slab + tallest towers, measured), padded a few px.
    Min zoom: the base must fill the screen. "contain" (whole base visible) is used on landscape screens; on tall/narrow
@@ -1080,12 +1098,18 @@ function render(dt) {
   chBeam = Math.max(0, chBeam - dt * 0.8);
   for (const a of crew) update(a, dt);
   bipUpdate(dt);
+  if (dt > 0.02) { if ((slowT += dt) > 2 && DPR_CAP > 2) { DPR_CAP = 2; resize(); } } else slowT = Math.max(0, slowT - dt);
+  { const want = groundScale(); if (Math.abs(want - gsWant) > 1e-3) { gsWant = want; gsAt = performance.now(); }
+    if (gsWant !== GS && performance.now() - gsAt > 150) paintGround(gsWant); }
   cx.setTransform(DPR, 0, 0, DPR, 0, 0); cx.imageSmoothingEnabled = false;
   drawSky();
   g = cx;
-  cx.setTransform(DPR * cam.z, 0, 0, DPR * cam.z, DPR * (VW / 2 - cam.x * cam.z), DPR * (VH / 2 - cam.y * cam.z));
+  const ZS = DPR * cam.z, TX = Math.round(DPR * (VW / 2 - cam.x * cam.z)), TY = Math.round(DPR * (VH / 2 - cam.y * cam.z));
+  // ground: 1 piksel bake = 1 piksel layar, di posisi piksel bulat (smoothing hanya terpakai saat zoom sedang berjalan)
+  cx.setTransform(1, 0, 0, 1, 0, 0); cx.imageSmoothingEnabled = true; cx.imageSmoothingQuality = "high";
+  cx.drawImage(GROUND, Math.round(TX + GX0 * ZS), Math.round(TY + GY0 * ZS), GROUND.width * ZS / GS, GROUND.height * ZS / GS);
+  cx.setTransform(ZS, 0, 0, ZS, TX, TY);
   cx.imageSmoothingEnabled = false;
-  cx.drawImage(GROUND, GX0, GY0);
   // wet neon reflections that breathe
   glow(...P(15, 12), 140, 70, "#35f2ff", 0.08 + 0.03 * Math.sin(t * 3));
   // depth-sorted world objects
@@ -1349,7 +1373,7 @@ async function boot() {
   crew.sort((a, b) => AGENTS.findIndex((d) => d.id === a.id) - AGENTS.findIndex((d) => d.id === b.id));
   { const src = new Image(); src.src = "assets/props/drone.png"; await src.decode().catch(() => {});
     const c = document.createElement("canvas"); c.width = Math.round(src.width * 0.75); c.height = Math.round(src.height * 0.75);
-    const q = c.getContext("2d"); q.imageSmoothingEnabled = true; q.imageSmoothingQuality = "high"; q.drawImage(src, 0, 0, c.width, c.height); bip.img = c; }
+    const q = c.getContext("2d"); q.imageSmoothingEnabled = true; q.imageSmoothingQuality = "high"; q.drawImage(src, 0, 0, c.width, c.height); bip.img = c; bip.src = src; }
   await loadStatus();
   setInterval(loadStatus, POLL_MS);
   let last = performance.now();
