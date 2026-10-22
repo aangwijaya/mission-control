@@ -83,6 +83,25 @@ function neonText(text, x, y, col, size, a = 1, align = "center") {
   g.shadowColor = col; g.shadowBlur = 10 * SKY.neon; g.fillStyle = col; g.fillText(text, x, y);
   g.shadowBlur = 0; g.globalAlpha = a * 0.85; g.fillStyle = "#fff"; g.fillText(text, x, y - 0.5); g.restore();
 }
+/* P2: material dinding — sambungan panel + bevel 1px, kotoran dither di kaki dinding, bekas rembesan hujan, pipa */
+function wallMat(b, f, seed) {
+  const len = (f === "L" ? b.x1 - b.x0 : b.y1 - b.y0) * 32, H = b.h;
+  face(b, f, 0, 0, () => {
+    for (let y = -24; y > -H + 4; y -= 24) { g.fillStyle = "rgba(8,6,24,.42)"; g.fillRect(0, y, len, 1); g.fillStyle = "rgba(190,180,255,.10)"; g.fillRect(0, y + 1, len, 1); }
+    for (let y = 0, r = 0; y > -H + 2; y -= 24, r++) for (let x = (r % 2) * 16 + 8; x < len - 2; x += 32) { g.fillStyle = "rgba(8,6,24,.28)"; g.fillRect(x, Math.max(-H, y - 23), 1, Math.min(23, H + y - 1)); }
+    for (let y = -1; y > -16; y--) for (let x = (y & 1); x < len; x += 2) if (hash(seed, x, y) < 0.55 + y * 0.034) { g.fillStyle = "rgba(4,3,14,.4)"; g.fillRect(x, y, 1, 1); }
+    for (let i = 0; i < len / 16; i++) {
+      const x = Math.round(hash(seed, i, 7) * (len - 4)), y0 = -H + 16 + hash(seed, i, 8) * H * 0.55, l = 12 + hash(seed, i, 9) * 34;
+      g.fillStyle = "rgba(4,3,14,.22)"; g.fillRect(x, y0, 2, l * 0.5); g.fillStyle = "rgba(4,3,14,.12)"; g.fillRect(x, y0 + l * 0.5, 2, l * 0.5);
+    }
+    if (f === "R" && seed % 2 === 0 && H > 60) {
+      const x = len - 12;
+      g.fillStyle = "#1e1842"; g.fillRect(x, -H + 8, 4, H - 8); g.fillStyle = "#5b51a8"; g.fillRect(x, -H + 8, 1, H - 8);
+      for (let y = -H + 20; y < -4; y += 28) { g.fillStyle = "#0e0b24"; g.fillRect(x - 1, y, 6, 2); }
+      g.strokeStyle = "rgba(8,6,24,.8)"; g.lineWidth = 1; g.beginPath(); g.moveTo(x, -H + 30); g.quadraticCurveTo(x - 30, -H + 52, x - 60, -H + 34); g.stroke();
+    }
+  });
+}
 const winCol = (k) => (k > 0.86 ? "rgba(255,110,200,.85)" : k > 0.66 ? "rgba(255,196,107,.85)" : "rgba(111,246,255,.75)");
 function windows(b, f, seed, style = "grid", v0 = 56) {
   const len = f === "L" ? b.x1 - b.x0 : b.y1 - b.y0, top = b.h - 12;
@@ -233,6 +252,7 @@ function drawTier(b, i) {
   for (const [ins, hh, win] of b.tiers) { parts.push({ x0: b.x0 + ins, y0: b.y0 + ins, x1: b.x1 - ins, y1: b.y1 - ins, z0: z, h: hh, win }); z += hh; }
   parts.forEach((p, k) => {
     box(p.x0, p.y0, p.x1, p.y1, p.z0, p.h, k ? "#453b86" : top, left, right, "rgba(155,140,255,.45)");
+    wallMat(p, "L", i * 10 + k); wallMat(p, "R", i * 10 + k + 6);
     windows(p, "L", i * 10 + k, p.win, k ? 0 : 56); windows(p, "R", i * 10 + k + 5, p.win, k ? 0 : 56);
     const e = P(p.x1, p.y1, p.z0 + p.h); g.strokeStyle = k === 2 ? "#ff3ea5" : "#35f2ff"; g.globalAlpha = 0.7; g.lineWidth = 2; g.beginPath(); g.moveTo(...P(p.x0, p.y1, p.z0 + p.h)); g.lineTo(...e); g.lineTo(...P(p.x1, p.y0, p.z0 + p.h)); g.stroke(); g.globalAlpha = 1;
   });
@@ -309,6 +329,7 @@ function drawDome(b, i) {
 function drawShop(b, i) {
   const [top, left, right] = b.c;
   box(b.x0, b.y0, b.x1, b.y1, 0, b.h, top, left, right, "rgba(155,140,255,.45)");
+  wallMat(b, "L", i * 10 + 1); wallMat(b, "R", i * 10 + 2);
   face(b, "L", 0, b.h, () => { g.fillStyle = "#2a2050"; g.fillRect(0, 0, (b.x1 - b.x0) * 32, 4); });
   windows(b, "R", i * 10 + 5, b.win, 50);
   storefront(b, i);
@@ -368,6 +389,13 @@ for (const [i, b] of BUILD.entries()) {
 }
 
 /* ---------- HQ (Hunter Base cutaway) ---------- */
+// P2: armor panel Hunter Base — sambungan horizontal + bevel, baut, kick plate bawah, ventilasi kecil
+function hqPanels(len, H) {
+  for (const y of [-52, -96]) { g.fillStyle = "rgba(40,50,110,.4)"; g.fillRect(0, y, len, 1); g.fillStyle = "rgba(255,255,255,.35)"; g.fillRect(0, y + 1, len, 1); }
+  for (let x = 4; x < len; x += 32) for (const y of [-56, -100, -30]) { g.fillStyle = "#6f7fc0"; g.fillRect(x, y, 2, 2); g.fillStyle = "#ffffff"; g.fillRect(x, y, 1, 1); }
+  g.fillStyle = "#7e8fd0"; g.fillRect(0, -8, len, 8); g.fillStyle = "rgba(255,255,255,.45)"; g.fillRect(0, -8, len, 1); g.fillStyle = "rgba(30,40,90,.5)"; g.fillRect(0, -1, len, 1);
+  for (let x = 20; x < len - 20; x += 96) for (let k = 0; k < 4; k++) { g.fillStyle = "#3a4888"; g.fillRect(x, -44 + k * 3, 16, 1); }
+}
 const WALLS = [
   { r: R(0, 0, 10, 1), h: 132 }, { r: R(0, 1, 1, 8), h: 132 },
   { r: R(1, 7, 4, 8), h: 10, rail: 1 }, { r: R(6, 7, 10, 8), h: 10, rail: 1 },
@@ -391,6 +419,7 @@ for (const w of WALLS) {
         const len = (r.x1 - r.x0) * 32;
         g.fillStyle = "#3b6cff"; g.fillRect(0, -22, len, 6); g.fillStyle = "#dfe7ff"; g.fillRect(0, -16, len, 2);
         for (let x = 0; x < len; x += 32) { g.fillStyle = "rgba(40,50,110,.35)"; g.fillRect(x, -w.h, 1, w.h); }
+        hqPanels(len, w.h);
         // main wall monitor
         const sx = 70, sw = 196, sy = -118, sh = 76;
         g.fillStyle = "#111a3e"; g.fillRect(sx - 6, sy - 6, sw + 12, sh + 12);
@@ -418,6 +447,7 @@ for (const w of WALLS) {
         const len = (r.y1 - r.y0) * 32;
         g.fillStyle = "#3b6cff"; g.fillRect(0, -22, len, 6); g.fillStyle = "#dfe7ff"; g.fillRect(0, -16, len, 2);
         for (let x = 0; x < len; x += 32) { g.fillStyle = "rgba(40,50,110,.35)"; g.fillRect(x, -w.h, 1, w.h); }
+        hqPanels(len, w.h);
         // hunter emblem + side screen
         g.fillStyle = "#0b1636"; g.fillRect(118, -112, 86, 50);
         g.strokeStyle = "#35f2ff"; g.lineWidth = 1; g.strokeRect(118, -112, 86, 50);
@@ -649,6 +679,101 @@ add(6, 11, 8, 13, () => drawStatue(6, 11));
 add(13, 6, 14, 7, () => drawCafe(13, 6));
 const capUsed = CAPS.map(() => false);
 
+/* ---------- P2: material lantai (aspal, trotoar, panel HQ, plaza, taman); semua detail berseed hash() jadi stabil ---------- */
+const TQ = (x, y, u0, v0, u1, v1) => [P(x + u0, y + v0), P(x + u1, y + v0), P(x + u1, y + v1), P(x + u0, y + v1)];
+function isoLine(pts, col, w = 1) { g.strokeStyle = col; g.lineWidth = w; g.beginPath(); pts.forEach((p, i) => (i ? g.lineTo(p[0], p[1]) : g.moveTo(p[0], p[1]))); g.stroke(); }
+function dots(x, y, n, seed, cols, w = 1, h = 1, m = 0.04) {   // titik 1px acak berseed di dalam tile (agregat, debu, rumput)
+  for (let i = 0; i < n; i++) { const p = P(x + m + hash(seed, i, 1) * (1 - 2 * m), y + m + hash(seed, i, 2) * (1 - 2 * m)); g.fillStyle = cols[(hash(seed, i, 3) * cols.length) | 0]; g.fillRect(Math.round(p[0]), Math.round(p[1]), w, h); }
+}
+const gAt = (x, y) => (x >= 0 && y >= 0 && x < MW && y < MH ? ground(x, y) : "");
+function groundTile(x, y, k) {
+  const sd = x * 31 + y * 17 + 5;
+  if (k === "S") {   // aspal basah: agregat, bekas ban, retak
+    poly(TQ(x, y, 0, 0, 1, 1), hash(x, y) > 0.8 ? "#17142e" : "#141127");
+    dots(x, y, 34, sd, ["#211d40", "#0d0b1e", "#262248", "#1a1736"]);
+    const hz = y === 8 || y === 9, vt = x === 10 || x === 11;
+    if (hz && !vt) for (const v of [0.22, 0.68]) poly(TQ(x, y, 0, v, 1, v + 0.1), "rgba(4,3,12,.22)");
+    if (vt && !hz) for (const u of [0.22, 0.68]) poly(TQ(x, y, u, 0, u + 0.1, 1), "rgba(4,3,12,.22)");
+    if (hash(x, y, 11) > 0.62) {
+      const u = 0.15 + hash(x, y, 12) * 0.5, v = 0.15 + hash(x, y, 13) * 0.5, s = hash(x, y, 14) > 0.5 ? 1 : -1;
+      isoLine([P(x + u, y + v), P(x + u + 0.1, y + v + 0.06 * s), P(x + u + 0.16, y + v + 0.2), P(x + u + 0.3, y + v + 0.22 * s + 0.1)], "rgba(3,2,10,.85)", 0.8);
+      isoLine([P(x + u + 0.16, y + v + 0.2), P(x + u + 0.2, y + v + 0.34)], "rgba(3,2,10,.7)", 0.6);
+    }
+    return;
+  }
+  if (k === "W") {   // trotoar: paver 2x2 dengan nat, tone beda, noda, kerb di sisi jalan
+    poly(TQ(x, y, 0, 0, 1, 1), "#14112a");
+    const tones = ["#221f3e", "#1f1c39", "#25213f", "#1c1935"];
+    for (let i = 0; i < 2; i++) for (let j = 0; j < 2; j++) {
+      const u0 = i / 2 + 0.025, v0 = j / 2 + 0.025, u1 = (i + 1) / 2 - 0.025, v1 = (j + 1) / 2 - 0.025;
+      poly(TQ(x, y, u0, v0, u1, v1), tones[(hash(x * 2 + i, y * 2 + j, 4) * 4) | 0]);
+      isoLine([P(x + u0, y + v1), P(x + u0, y + v0), P(x + u1, y + v0)], "rgba(150,140,240,.14)", 0.8);
+    }
+    dots(x, y, 10, sd, ["#2c2850", "#120f26"]);
+    if (hash(x, y, 9) > 0.8) { const c = P(x + 0.3 + hash(x, y, 10) * 0.4, y + 0.3 + hash(x, y, 15) * 0.4); g.fillStyle = "rgba(6,4,18,.35)"; g.beginPath(); g.ellipse(c[0], c[1], 7, 3, 0, 0, 7); g.fill(); g.beginPath(); g.ellipse(c[0] + 5, c[1] + 1, 4, 2, 0, 0, 7); g.fill(); }
+    const curb = (q, hi) => { poly(q, "#3b3576"); poly(hi, "rgba(190,180,255,.25)"); };
+    if (gAt(x, y + 1) === "S") curb(TQ(x, y, 0, 0.88, 1, 1), TQ(x, y, 0, 0.88, 1, 0.91));
+    if (gAt(x + 1, y) === "S") curb(TQ(x, y, 0.88, 0, 1, 1), TQ(x, y, 0.88, 0, 0.91, 1));
+    if (gAt(x, y - 1) === "S") curb(TQ(x, y, 0, 0, 1, 0.12), TQ(x, y, 0, 0, 1, 0.03));
+    if (gAt(x - 1, y) === "S") curb(TQ(x, y, 0, 0, 0.12, 1), TQ(x, y, 0, 0, 0.03, 1));
+    return;
+  }
+  if (k === "H") {   // panel logam Hunter Base: bevel, baut di sudut, ventilasi, goresan
+    poly(TQ(x, y, 0, 0, 1, 1), "#1d2554");
+    poly(TQ(x, y, 0.03, 0.03, 0.97, 0.97), (x + y) % 2 ? "#2d3870" : "#34417d");
+    isoLine([P(x + 0.03, y + 0.97), P(x + 0.03, y + 0.03), P(x + 0.97, y + 0.03)], "rgba(200,215,255,.38)", 1);
+    isoLine([P(x + 0.97, y + 0.03), P(x + 0.97, y + 0.97), P(x + 0.03, y + 0.97)], "rgba(8,12,36,.55)", 1);
+    for (const [u, v] of [[0.1, 0.1], [0.9, 0.1], [0.9, 0.9], [0.1, 0.9]]) { const p = P(x + u, y + v); g.fillStyle = "#0f1638"; g.fillRect(Math.round(p[0]) - 1, Math.round(p[1]), 3, 1); g.fillStyle = "#8e9cd8"; g.fillRect(Math.round(p[0]) - 1, Math.round(p[1]) - 1, 2, 1); }
+    if ((x * 7 + y * 3) % 6 === 0) {
+      poly(TQ(x, y, 0.3, 0.3, 0.7, 0.7), "#1a2250");
+      for (let u = 0.34; u < 0.68; u += 0.07) isoLine([P(x + u, y + 0.33), P(x + u, y + 0.67)], "rgba(120,140,220,.35)", 0.8);
+    }
+    for (let i = 0; i < 3; i++) if (hash(x, y, 20 + i) > 0.55) { const u = 0.15 + hash(x, y, 30 + i) * 0.6, v = 0.15 + hash(x, y, 40 + i) * 0.6; isoLine([P(x + u, y + v), P(x + u + 0.12, y + v + 0.03)], "rgba(220,230,255,.10)", 0.8); }
+    return;
+  }
+  if (k === "P") {   // plaza: ubin kecil 4x4, beberapa grate saluran air
+    poly(TQ(x, y, 0, 0, 1, 1), "#17113a");
+    const tones = ["#261e4f", "#221a46", "#2a2256", "#241c4b"];
+    for (let i = 0; i < 4; i++) for (let j = 0; j < 4; j++) poly(TQ(x, y, i / 4 + 0.015, j / 4 + 0.015, (i + 1) / 4 - 0.015, (j + 1) / 4 - 0.015), tones[(hash(x * 4 + i, y * 4 + j, 6) * 4) | 0]);
+    if (hash(x, y, 8) > 0.7) { poly(TQ(x, y, 0.375, 0.375, 0.625, 0.625), "#0b0820"); for (let u = 0.4; u < 0.62; u += 0.05) isoLine([P(x + u, y + 0.385), P(x + u, y + 0.615)], "rgba(150,140,240,.45)", 0.7); }
+    return;
+  }
+  if (k === "G") {   // taman: rumput 3 tone + rumpun + bunga kecil
+    poly(TQ(x, y, 0, 0, 1, 1), "#12302b");
+    for (let i = 0; i < 4; i++) { const c = P(x + 0.15 + hash(x, y, 50 + i) * 0.7, y + 0.15 + hash(x, y, 60 + i) * 0.7); g.fillStyle = i % 2 ? "rgba(30,74,64,.6)" : "rgba(8,26,22,.55)"; g.beginPath(); g.ellipse(c[0], c[1], 9 + 6 * hash(x, y, 70 + i), 4 + 2 * hash(x, y, 80 + i), 0, 0, 7); g.fill(); }
+    dots(x, y, 46, sd, ["#1f4a40", "#2a5e4e", "#0d2622", "#173a34"], 1, 2, 0.06);
+    if (hash(x, y, 90) > 0.5) dots(x, y, 3, sd + 99, ["#c24bd6", "#ff3ea5", "#9b5cff"], 1, 1, 0.15);
+  }
+}
+const MANHOLES = [[3, 8], [15, 9], [10, 2], [11, 12], [7, 9]];
+const PUDDLES = [[5, 9, "#ff3ea5"], [13, 8, "#35f2ff"], [11, 5, "#9b5cff"], [10, 11, "#ff3ea5"], [1, 9, "#35f2ff"], [16, 8, "#ffb547"]];
+function groundDecals() {
+  for (const [x, y] of MANHOLES) {
+    const c = P(x + 0.5, y + 0.5);
+    g.fillStyle = "#2b2752"; g.beginPath(); g.ellipse(c[0], c[1] + 0.5, 12, 6, 0, 0, 7); g.fill();
+    g.fillStyle = "#0e0c20"; g.beginPath(); g.ellipse(c[0], c[1], 11, 5.5, 0, 0, 7); g.fill();
+    g.save(); g.beginPath(); g.ellipse(c[0], c[1], 9.5, 4.7, 0, 0, 7); g.clip();
+    g.strokeStyle = "rgba(110,100,200,.45)"; g.lineWidth = 0.8;
+    for (let k = -10; k <= 10; k += 3) { g.beginPath(); g.moveTo(c[0] + k - 6, c[1] - 6); g.lineTo(c[0] + k + 6, c[1] + 6); g.stroke(); }
+    g.restore();
+    g.strokeStyle = "rgba(190,180,255,.25)"; g.lineWidth = 0.8; g.beginPath(); g.ellipse(c[0], c[1], 11, 5.5, 0, Math.PI, 2 * Math.PI); g.stroke();
+  }
+  for (const [x, y, col] of PUDDLES) {   // genangan: bentuk organik, isi warna langit + pantulan neon terdekat
+    const c = P(x + 0.5, y + 0.5), blobs = [[0, 0, 15, 5], [-9, 2, 9, 3.5], [8, -2, 10, 3.5]];
+    g.fillStyle = "rgba(52,38,120,.6)"; for (const [dx, dy, rx, ry] of blobs) { g.beginPath(); g.ellipse(c[0] + dx, c[1] + dy, rx, ry, 0, 0, 7); g.fill(); }
+    g.save(); g.beginPath(); for (const [dx, dy, rx, ry] of blobs) g.ellipse(c[0] + dx, c[1] + dy, rx, ry, 0, 0, 7); g.clip();
+    // pantulan neon = riak horizontal 1px (bukan blob glow), makin pudar ke tepi
+    g.fillStyle = col; for (let k = 0; k < 6; k++) { g.globalAlpha = 0.5 - k * 0.07; const w = 14 - k * 2; g.fillRect(Math.round(c[0] - w / 2 + (k % 2 ? 2 : -2)), Math.round(c[1] - 4 + k * 1.6), w, 1); }
+    g.globalAlpha = 0.3; g.fillStyle = "#dfe7ff"; g.fillRect(Math.round(c[0] - 13), Math.round(c[1] - 2), 5, 1); g.fillRect(Math.round(c[0] + 9), Math.round(c[1] + 1), 4, 1);
+    g.restore();
+    g.strokeStyle = "rgba(150,140,240,.22)"; g.lineWidth = 0.7; g.beginPath(); g.ellipse(c[0], c[1], 15, 5, 0, Math.PI * 1.1, Math.PI * 1.9); g.stroke();
+  }
+  // ambient occlusion: tanah sedikit lebih gelap di kaki gedung dan dinding markas (3 pita bertingkat, ala dither)
+  const ao = (r) => { for (let k = 3; k >= 1; k--) { const e = 0.07 * k; poly([P(r.x0 - e, r.y0 - e), P(r.x1 + e, r.y0 - e), P(r.x1 + e, r.y1 + e), P(r.x0 - e, r.y1 + e)], "rgba(3,2,12,.16)"); } };
+  for (const b of BUILD) ao(b);
+  for (const w of WALLS) ao(w.r);
+}
+
 /* ---------- ground (prerendered once) ---------- */
 const GROUND = document.createElement("canvas");
 const GX0 = -MH * 32 - 8, GY0 = -20, SLAB = 46;
@@ -666,20 +791,8 @@ function paintGround(s = groundScale()) {
   g.fillStyle = "#35f2ff";
   for (let i = 0; i < MW; i += 2) { const q = P(i + 0.5, MH, -20); g.fillRect(q[0] - 2, q[1] - 1, 4, 2); }
   for (let i = 0; i < MH; i += 2) { const q = P(MW, i + 0.5, -20); g.fillRect(q[0] - 2, q[1] - 1, 4, 2); }
-  for (let y = 0; y < MH; y++) for (let x = 0; x < MW; x++) {
-    const k = ground(x, y), d = [P(x, y), P(x + 1, y), P(x + 1, y + 1), P(x, y + 1)];
-    let fill = "#1c1934";
-    if (k === "H") fill = (x + y) % 2 ? "#2d3870" : "#34417d";
-    else if (k === "S") fill = hash(x, y) > 0.8 ? "#17142e" : "#141127";
-    else if (k === "G") fill = hash(x, y, 3) > 0.6 ? "#173a34" : "#14322e";
-    else if (k === "P") fill = (x + y) % 2 ? "#221a46" : "#261e4f";
-    else fill = hash(x, y, 2) > 0.85 ? "#221f3e" : "#1f1c39";
-    poly(d, fill);
-    g.strokeStyle = k === "H" ? "rgba(140,160,255,.35)" : k === "S" ? "rgba(0,0,0,.25)" : "rgba(90,80,170,.35)";
-    g.lineWidth = 1; g.beginPath(); g.moveTo(...d[0]); g.lineTo(...d[1]); g.lineTo(...d[2]); g.stroke();
-    if (k === "S" && hash(x, y, 7) > 0.7) { const c = P(x + 0.5, y + 0.5); g.fillStyle = "rgba(120,110,220,.12)"; g.beginPath(); g.ellipse(c[0], c[1], 18, 6, 0, 0, 7); g.fill(); }
-    if (k === "P") { const c = P(x + 0.5, y + 0.5); g.strokeStyle = "rgba(53,242,255,.18)"; g.beginPath(); g.moveTo(c[0] - 16, c[1]); g.lineTo(c[0], c[1] - 8); g.lineTo(c[0] + 16, c[1]); g.stroke(); }
-  }
+  for (let y = 0; y < MH; y++) for (let x = 0; x < MW; x++) groundTile(x, y, ground(x, y));
+  groundDecals();
   // road markings
   g.fillStyle = "rgba(255,181,71,.7)";
   for (let x = 0; x < MW; x++) if (x !== 10 && x !== 11) { const a = P(x + 0.3, 9), b = P(x + 0.6, 9); g.beginPath(); g.moveTo(a[0], a[1] - 1); g.lineTo(b[0], b[1] - 1); g.lineTo(b[0], b[1] + 1); g.lineTo(a[0], a[1] + 1); g.fill(); }
