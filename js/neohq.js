@@ -947,6 +947,22 @@ const splashes = [];
 /* ---------- camera + main loop ---------- */
 const cv = document.getElementById("city"), cx = cv.getContext("2d");
 const cam = { x: P(MW / 2, MH / 2)[0], y: P(MW / 2, MH / 2)[1] - 60, z: 1 };
+/* smooth camera pan (clicking a crew member / BIP): eases over PAN_S instead of snapping, so the city doesn't "jump".
+   Target is a world point (wx, wy) that should land at screen (VW/2, sy); recomputed every frame so zoom changes stay correct. */
+const PAN_S = 0.35;
+let pan = null;
+function panTo(wx, wy, sy = VH / 2) {
+  if (matchMedia("(prefers-reduced-motion:reduce)").matches) { cam.x = wx; cam.y = wy - (sy - VH / 2) / cam.z; pan = null; return; }
+  pan = { fx: cam.x, fy: cam.y, wx, wy, sy, k: 0 };
+}
+function panStep(dt) {
+  if (!pan) return;
+  pan.k = Math.min(1, pan.k + Math.min(dt, 1 / 30) / PAN_S);   // a slow frame (dialog/portrait decode) must not skip half the pan
+  const k = pan.k, e = k < 0.5 ? 4 * k * k * k : 1 - Math.pow(-2 * k + 2, 3) / 2;   // ease-in-out cubic: no sudden first step
+  const ty = pan.wy - (pan.sy - VH / 2) / cam.z;
+  cam.x = pan.fx + (pan.wx - pan.fx) * e; cam.y = pan.fy + (ty - pan.fy) * e;
+  if (pan.k >= 1) pan = null;
+}
 let VW = 0, VH = 0, DPR = 1;
 function resize() { DPR = Math.min(2, devicePixelRatio || 1); VW = cv.clientWidth; VH = cv.clientHeight; cv.width = VW * DPR; cv.height = VH * DPR; }
 function fit() { const wpx = (MW + MH) * 32 + 40, hpx = (MW + MH) * 16 + 320; cam.z = Math.max(0.35, Math.min(2, Math.max(Math.min(VW / wpx, VH / hpx) * 1.25, VW < 720 ? 0.95 : 0))); cam.x = P(MW / 2, MH / 2)[0]; cam.y = P(MW / 2, MH / 2)[1] - 90; }
@@ -970,6 +986,7 @@ function drawSky() {
   }
 }
 function render(dt) {
+  panStep(dt);
   t += RM ? dt * 0.3 : dt;
   for (let i = 0; i < 2; i++) padBeam[i] = Math.max(0, padBeam[i] - dt * 0.8);
   for (const a of crew) update(a, dt);
@@ -1048,7 +1065,7 @@ function sortIso(list) {
 
 /* ---------- input ---------- */
 const ptrs = new Map(); let drag = null, moved = 0, pinch0 = 0;
-cv.addEventListener("pointerdown", (e) => { cv.setPointerCapture(e.pointerId); ptrs.set(e.pointerId, [e.clientX, e.clientY]); moved = 0; drag = { x: e.clientX, y: e.clientY, cx: cam.x, cy: cam.y }; if (ptrs.size === 2) { const [a, b] = [...ptrs.values()]; pinch0 = Math.hypot(a[0] - b[0], a[1] - b[1]) / cam.z; } cv.classList.add("drag"); });
+cv.addEventListener("pointerdown", (e) => { pan = null; cv.setPointerCapture(e.pointerId); ptrs.set(e.pointerId, [e.clientX, e.clientY]); moved = 0; drag = { x: e.clientX, y: e.clientY, cx: cam.x, cy: cam.y }; if (ptrs.size === 2) { const [a, b] = [...ptrs.values()]; pinch0 = Math.hypot(a[0] - b[0], a[1] - b[1]) / cam.z; } cv.classList.add("drag"); });
 cv.addEventListener("pointermove", (e) => {
   if (!ptrs.has(e.pointerId)) { cv.classList.toggle("hover", !!hit(e)); return; }
   ptrs.set(e.pointerId, [e.clientX, e.clientY]);
@@ -1157,7 +1174,7 @@ function pick(a) {
     bip.say = { text: BIP_LINES[(Math.random() * BIP_LINES.length) | 0], until: t + 3 }; bip.spin = 0.8;
     document.getElementById("infoBody").innerHTML = `<img src="assets/props/drone.png" alt="" style="object-fit:contain;padding:6px"><div><h3 style="color:#ffb547">BIP</h3><p>maskot markas · <span class="c-work">PATROLI</span></p><p>Drone kecil penjaga Hunter Base. Cuma keliling di dalam markas, kadang muter dan nyapa kru.</p></div>`;
     info.hidden = false; document.querySelectorAll(".crew li").forEach((l) => l.classList.toggle("sel", l.dataset.id === "bip"));
-    cam.x = bip.sx; cam.y = bip.sy - 20; return;
+    if (bip.sx != null) panTo(bip.sx, bip.sy - 20); return;
   }
   a.say = null;   // the NPC dialog below replaces the little speech bubble for crew clicks
   renderInfo(a); info.hidden = false;
@@ -1165,7 +1182,12 @@ function pick(a) {
   openDialog({ id: a.id, name: a.def.name, accent: a.def.accent, portrait: `assets/portraits/${a.id}.png`,
     first: statusLine(a.id, a.status, I.summary || a.summary, I.lastActive ? relTime(I.lastActive) : "") });
   document.querySelectorAll(".crew li").forEach((l) => l.classList.toggle("sel", l.dataset.id === a.id));
-  if (a.sx != null) { cam.x = a.sx; cam.y = a.sy - 40; }
+  if (a.sx != null) {
+    // put the sprite (centre ~24 px above its feet) at ~45% of the area that the dialog leaves free, not behind the dialog
+    const box = document.getElementById("npcBox"), face = document.getElementById("npcFace");
+    const free = Math.min(VH, box ? box.getBoundingClientRect().top : VH, SMALL.matches && face ? face.getBoundingClientRect().top + 40 : VH);
+    panTo(a.sx, a.sy - 24, Math.max(90, free * 0.45));
+  }
 }
 setInterval(() => { if (SEL && SEL !== bip && !info.hidden) renderInfo(SEL); }, 5000);
 function paintUI() {
