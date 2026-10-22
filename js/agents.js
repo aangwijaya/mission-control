@@ -7,7 +7,7 @@ export const AGENTS = [
   { id:"makelar", name:"makelar", title:"my quant", gender:"f", accent:"#ffaa55",
     work:"action", emotes:{work:"$", idle:"$"},
     lines:["Harga segini? Nego dikit lah.","Data dulu, baru deal.","Risiko udah aku hitung, aman.","Grafiknya cakep, cuan nih.","Win-win, semua senyum."] },
-  { id:"alcapone", name:"Alcapone", title:"Alpha", gender:"m", accent:"#b48cff",
+  { id:"alcapone", name:"Alcapone", title:"Alpha", gender:"m", accent:"#38c8ff",
     work:"action", emotes:{work:"♠", idle:"…"},
     lines:["Tenang. Semua udah aku atur.","Kerjaan beres dulu, baru ngopi.","Alpha nggak pernah panik.","Rapi, cepat, tuntas.","Markas aman terkendali."] },
   { id:"sisotoy", name:"el sotoy", title:"ngide", gender:"m", accent:"#ffd447",
@@ -27,7 +27,7 @@ export const AGENTS = [
 export const LOOKS = {
   nerd:     "zirah merah-putih, visor cyan transparan, rambut hitam belah pinggir, bawa tablet",
   makelar:  "zirah oranye-putih, headset + mic, rambut panjang auburn, bawa gulungan kontrak",
-  alcapone: "zirah ungu, helm crest dengan sirip emas & tanduk, bahu bulat besar, sabuk emas",
+  alcapone: "zirah putih mutiara dengan trim emas & aksen biru es (permata helm, inti dada menyala, garis cahaya di bahu & sepatu bot), helm crest dengan sirip emas & tanduk, bahu bulat besar, sabuk emas, bodysuit hitam arang, rambut panjang pirang keemasan dikuncir besar yang berayun dari belakang helm",
   sisotoy:  "zirah kuning, helm bulat dengan antena bola nyala, telunjuk 'aku ada ide!'",
   kuku:     "zirah teal, rambut cepol, headset kuping kucing, burung robot kecil di kepala, bawa HP",
   kurir:    "zirah violet, topi bersayap, tas kurir + amplop (siap antar lowongan)",

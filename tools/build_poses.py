@@ -7,7 +7,7 @@ from PIL import Image
 from scipy import ndimage as nd
 WK = os.path.join(os.path.dirname(os.path.abspath(__file__)), "work")
 # neck row (last head row) and waist row in master coords, tuned per agent by eye
-CUT = {"nerd": (21, 43), "makelar": (25, 44), "alcapone": (27, 49), "sisotoy": (27, 47),
+CUT = {"nerd": (21, 43), "makelar": (25, 44), "alcapone": (26, 48), "sisotoy": (27, 47),
        "kuku": (32, 50), "kurir": (29, 45), "jack": (27, 46)}
 # raised glove box (wave-sheet coords x0,x1,y0,y1) for sprites where the auto glove test fails
 HANDBOX = {"makelar": (0, 11, 4, 19)}
