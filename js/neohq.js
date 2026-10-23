@@ -53,7 +53,7 @@ const BUILD = [
     tiers: [[0.45, 96, "band"], [0.9, 74, "tall"]], spire: 1, balcony: 1, awning: "#ff3ea5", ac: 1,
     signs: [{ k: "v", text: "HOTEL", col: "#ff3ea5", u: 0.5, v: 140 }, { k: "h", f: "R", text: "NEO INN", col: "#35f2ff", u: 1.5, v: 120, s: 10 }] },
   { k: "round", x0: 15, y0: 0, x1: 17, y1: 2, h: 300, r: 0.9, store: "#35f2ff" },
-  { k: "shop", x0: 12, y0: 2, x1: 15, y1: 5, h: 74, c: ["#3b2c62", "#2b2050", "#1e1640"], store: "#ffb547", win: "grid", awning: "#ffb547", lights: 1, garden: 1, ac: 1, board: "KUKU TV",
+  { k: "shop", x0: 12, y0: 2, x1: 15, y1: 5, h: 74, c: ["#3b2c62", "#2b2050", "#1e1640"], store: "#ffb547", win: "grid", awning: "#ffb547", lights: 1, garden: 1, ac: 1, board: "KUKU TV", art: "kopi",
     signs: [{ k: "h", f: "L", text: "KOPI", col: "#ffb547", u: 1.5, v: 64, s: 12 }, { k: "h", f: "R", text: "BUKA 24J", col: "#35f2ff", u: 1.5, v: 60, s: 7 }] },
 ];
 
@@ -361,13 +361,35 @@ function drawDome(b, i) {
   glow(em[0], em[1], 30, 30, "#9b5cff", 0.3);
   signs(b, i);
 }
+/* P8: dinding gedung dari gambar pixel art (1 px gambar = 1 unit dinding; KOPI: 96x74 = 3 tile x tinggi 74).
+   L = sisi depan (etalase), R = sisi samping. Diperbesar nearest 8x sekali lalu digambar smoothing (sharp bilinear). */
+const ART_UP = 8;
+const WALLART = { kopi: { L: { src: "assets/walls/kopi-front.png", img: null }, R: { src: "assets/walls/kopi-side.png", img: null } } };
+async function loadWallArt() {
+  await Promise.all(Object.values(WALLART).flatMap((a) => Object.values(a)).map(async (A) => {
+    const src = new Image(); src.src = A.src;
+    try { await src.decode(); } catch { return; }   // gagal load = dinding prosedural
+    const c = document.createElement("canvas"); c.width = src.width * ART_UP; c.height = src.height * ART_UP;
+    const q = c.getContext("2d"); q.imageSmoothingEnabled = false; q.drawImage(src, 0, 0, c.width, c.height); A.img = c;
+  }));
+}
+function wallArt(b, f) {
+  const A = b.art && WALLART[b.art] && WALLART[b.art][f];
+  if (!A || !A.img) return false;
+  const w = (f === "L" ? b.x1 - b.x0 : b.y1 - b.y0) * 32;
+  face(b, f, 0, 0, () => { g.imageSmoothingEnabled = true; g.imageSmoothingQuality = "high"; g.drawImage(A.img, 0, -b.h, w, b.h); g.imageSmoothingEnabled = false; });
+  return true;
+}
 function drawShop(b, i) {
   const [top, left, right] = b.c;
   box(b.x0, b.y0, b.x1, b.y1, 0, b.h, top, left, right, "rgba(155,140,255,.45)");
-  wallMat(b, "L", i * 10 + 1); wallMat(b, "R", i * 10 + 2);
+  const artL = wallArt(b, "L"), artR = wallArt(b, "R");
+  if (!artL) wallMat(b, "L", i * 10 + 1);
+  if (!artR) wallMat(b, "R", i * 10 + 2);
   face(b, "L", 0, b.h, () => { g.fillStyle = "#2a2050"; g.fillRect(0, 0, (b.x1 - b.x0) * 32, 4); });
-  windows(b, "R", i * 10 + 5, b.win, 50);
-  storefront(b, i);
+  if (!artR) windows(b, "R", i * 10 + 5, b.win, 50);
+  if (!artL) storefront(b, i);
+  else { const gl = P((b.x0 + b.x1) / 2, b.y1 + 0.6); glow(gl[0], gl[1], 70, 22, b.store, 0.14); }
   if (b.ac) wallAC(b, i);
   if (b.screen) wallScreen(b);
   if (b.awning) awning(b, b.awning);
@@ -1665,6 +1687,7 @@ async function boot() {
   addEventListener("resize", onResize);
   addEventListener("orientationchange", () => requestAnimationFrame(onResize));   // some mobile browsers report the new size a frame late
   try { await document.fonts.load('10px "PS2P"'); await document.fonts.load('15px "Pixelify"'); } catch {}
+  await loadWallArt();
   paintGround();
   const kairo = await fetch("assets/sprites/kairo.json").then((r) => r.json());
   await Promise.all(AGENTS.map(async (def, i) => {
