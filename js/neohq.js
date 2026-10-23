@@ -50,7 +50,7 @@ const statics = [];
 
 const BUILD = [
   { k: "tier", x0: 1, y0: 11, x1: 4, y1: 14, h: 150, c: ["#3a3072", "#2a2357", "#1d1842"], store: "#ff3ea5", win: "grid",
-    tiers: [[0.45, 96, "band"], [0.9, 74, "tall"]], spire: 1, balcony: 1, awning: "#ff3ea5", ac: 1,
+    tiers: [[0.45, 96, "band"], [0.9, 74, "tall"]], spire: 1, balcony: 1, awning: "#ff3ea5", ac: 1, art: "hotel",
     signs: [{ k: "v", text: "HOTEL", col: "#ff3ea5", u: 0.5, v: 140 }, { k: "h", f: "R", text: "NEO INN", col: "#35f2ff", u: 1.5, v: 120, s: 10 }] },
   { k: "round", x0: 15, y0: 0, x1: 17, y1: 2, h: 300, r: 0.9, store: "#35f2ff" },
   { k: "shop", x0: 12, y0: 2, x1: 15, y1: 5, h: 74, c: ["#3b2c62", "#2b2050", "#1e1640"], store: "#ffb547", win: "grid", awning: "#ffb547", lights: 1, garden: 1, ac: 1, board: "KUKU TV", art: "kopi",
@@ -287,11 +287,13 @@ function drawTier(b, i) {
   for (const [ins, hh, win] of b.tiers) { parts.push({ x0: b.x0 + ins, y0: b.y0 + ins, x1: b.x1 - ins, y1: b.y1 - ins, z0: z, h: hh, win }); z += hh; }
   parts.forEach((p, k) => {
     box(p.x0, p.y0, p.x1, p.y1, p.z0, p.h, k ? "#453b86" : top, left, right, "rgba(155,140,255,.45)");
-    wallMat(p, "L", i * 10 + k); wallMat(p, "R", i * 10 + k + 6);
-    windows(p, "L", i * 10 + k, p.win, k ? 0 : 56); windows(p, "R", i * 10 + k + 5, p.win, k ? 0 : 56);
+    if (b.art) p.art = b.art + "-" + ["base", "mid", "top"][k];
+    if (!wallArt(p, "L")) { wallMat(p, "L", i * 10 + k); windows(p, "L", i * 10 + k, p.win, k ? 0 : 56); }
+    if (!wallArt(p, "R")) { wallMat(p, "R", i * 10 + k + 6); windows(p, "R", i * 10 + k + 5, p.win, k ? 0 : 56); }
     const e = P(p.x1, p.y1, p.z0 + p.h); g.strokeStyle = k === 2 ? "#ff3ea5" : "#35f2ff"; g.globalAlpha = 0.7; g.lineWidth = 2; g.beginPath(); g.moveTo(...P(p.x0, p.y1, p.z0 + p.h)); g.lineTo(...e); g.lineTo(...P(p.x1, p.y0, p.z0 + p.h)); g.stroke(); g.globalAlpha = 1;
   });
-  storefront(b, i);
+  if (!(parts[0].art && WALLART[parts[0].art].L.img)) storefront(b, i);
+  else { const gl = P((b.x0 + b.x1) / 2, b.y1 + 0.6); glow(gl[0], gl[1], 70, 22, b.store, 0.14); }
   if (b.balcony) balconies(b, i);
   if (b.ac) wallAC(b, i);
   cornerStrip(parts[1], "#ff3ea5", 6);
@@ -365,6 +367,8 @@ function drawDome(b, i) {
    L = sisi depan (etalase), R = sisi samping. Diperbesar nearest 8x sekali lalu digambar smoothing (sharp bilinear). */
 const ART_UP = 8;
 const WALLART = { kopi: { L: { src: "assets/walls/kopi-front.png", img: null }, R: { src: "assets/walls/kopi-side.png", img: null } } };
+// P11: hotel NEO INN, satu pasang gambar per tingkat (base 96x150, mid 67x96, top 38x74)
+for (const k of ["base", "mid", "top"]) WALLART["hotel-" + k] = { L: { src: `assets/walls/hotel-${k}-L.png`, img: null }, R: { src: `assets/walls/hotel-${k}-R.png`, img: null } };
 async function loadWallArt() {
   await Promise.all(Object.values(WALLART).flatMap((a) => Object.values(a)).map(async (A) => {
     const src = new Image(); src.src = A.src;
