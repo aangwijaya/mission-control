@@ -524,7 +524,9 @@ const CHAMBER = R(4, 4, 6, 6);   // teleportation chamber: crew beam out anywher
 const CH_X = 5, CH_Y = 5, CH_Z = 12;
 const onChamber = (x, y) => x > CHAMBER.x0 + 0.2 && x < CHAMBER.x1 - 0.2 && y > CHAMBER.y0 + 0.2 && y < CHAMBER.y1 - 0.2;
 const SERVERS = [[1, 4], [1, 5], [1, 6]];
-const CAPS = [[8, 1], [8, 2], [8, 5], [8, 6], [16, 10], [16, 11], [16, 12]];
+const CAPS = [[8, 1], [8, 2], [8, 5], [8, 6]];   // 4 pod tidur, semuanya di markas
+const DOZE = [[7, 6], [6, 6], [3, 6]];   // kru offline ke-5 dst: tidur berdiri di samping pod sambil antre
+const DRONEHUB = R(16, 10, 17, 13);   // hub drone kurir di pojok plaza
 const TABLE = R(14, 11, 16, 13);   // holo map table, out on the plaza
 const SPOTS = [[2, 3, "b"], [4, 3, "b"], [6, 3, "b"], [14, 13, "b"], [15, 13, "b"], [2, 5, "bl"], [2, 6, "bl"]];
 
@@ -751,6 +753,47 @@ function drawStatue(x, y) {
   const gr = g.createLinearGradient(0, c[1] - 60, 0, c[1]); gr.addColorStop(0, "rgba(53,242,255,0)"); gr.addColorStop(1, "rgba(53,242,255,.25)");
   g.fillStyle = gr; g.fillRect(c[0] - 14, c[1] - 60, 28, 58);
 }
+/* hub drone kurir: menara ramping dengan 3 landasan bertingkat; drone bergantian terbang keluar bawa paket lalu pulang */
+const HUB_PADS = [[10.65, 34], [12.35, 62], [11.5, 92]];   // [y tengah landasan, tinggi z]
+function drawHubDrone(px, py, a, pkg) {
+  g.save(); g.globalAlpha = a;
+  for (const dx of [-7, 7]) { g.fillStyle = `rgba(185,198,242,${0.35 + 0.25 * Math.sin(t * 40 + dx)})`; g.beginPath(); g.ellipse(px + dx, py - 7, 5, 1.5, 0, 0, 7); g.fill(); }
+  g.fillStyle = "#3a3072"; g.fillRect(px - 7, py - 7, 14, 1); g.fillStyle = "#1d1842"; g.fillRect(px - 5, py - 6, 10, 4);
+  g.fillStyle = "#5b51a8"; g.fillRect(px - 5, py - 6, 10, 1);
+  g.fillStyle = Math.sin(t * 6 + px) > 0 ? "#5cf08a" : "#ff4a5a"; g.fillRect(px - 1, py - 4, 2, 1);
+  if (pkg) { g.fillStyle = "#7a4a0e"; g.fillRect(px - 3, py - 2, 6, 4); g.fillStyle = "#ffb547"; g.fillRect(px - 3, py - 2, 6, 1); }
+  g.restore();
+}
+function drawDroneHub(r) {
+  const cx = (r.x0 + r.x1) / 2, cy = (r.y0 + r.y1) / 2;
+  box(r.x0 + 0.08, r.y0 + 0.08, r.x1 - 0.08, r.y1 - 0.08, 0, 6, "#2a2357", "#1d1842", "#0e0b24", "#35f2ff");
+  box(cx - 0.14, cy - 0.14, cx + 0.14, cy + 0.14, 6, 104, "#5b51a8", "#3a3072", "#2a2357", "rgba(155,140,255,.5)");
+  face({ x0: cx - 0.14, y0: cy - 0.14, x1: cx + 0.14, y1: cy + 0.14 }, "L", 0, 6, () => {   // strip cahaya naik di tiang
+    for (let k = 0; k < 10; k++) { const on = ((t * 6) | 0) % 10 === k; g.fillStyle = on ? "#e0ffff" : "#1a7a9a"; g.fillRect(3, -8 - k * 10, 3, 4); }
+  });
+  for (const [k, [py, z]] of HUB_PADS.entries()) {
+    const arm0 = P(cx, cy, z - 2), pc = P(cx, py, z);
+    g.strokeStyle = "#4a4290"; g.lineWidth = 3; g.beginPath(); g.moveTo(...arm0); g.lineTo(pc[0], pc[1] + 2); g.stroke();
+    g.fillStyle = "#1d1842"; g.beginPath(); g.ellipse(pc[0], pc[1] + 3, 20, 10, 0, 0, 7); g.fill();
+    g.fillStyle = "#3a3072"; g.beginPath(); g.ellipse(pc[0], pc[1], 20, 10, 0, 0, 7); g.fill();
+    g.strokeStyle = "rgba(53,242,255,.8)"; g.lineWidth = 1; g.setLineDash([3, 3]); g.lineDashOffset = -t * 8 + k * 2;
+    g.beginPath(); g.ellipse(pc[0], pc[1], 15, 7.5, 0, 0, 7); g.stroke(); g.setLineDash([]);
+    g.fillStyle = "#ffb547"; g.fillRect(pc[0] - 4, pc[1] - 1, 8, 1); g.fillRect(pc[0] - 1, pc[1] - 3, 2, 5);
+    for (const a of [0, 1.57, 3.14, 4.71]) { const lx = pc[0] + Math.cos(a + k) * 18, ly = pc[1] + Math.sin(a + k) * 9; g.fillStyle = Math.sin(t * 3 + a + k) > 0 ? "#ffb547" : "#7a4a0e"; g.fillRect(Math.round(lx), Math.round(ly), 2, 2); }
+    glow(pc[0], pc[1], 26, 12, "#35f2ff", 0.18);
+    // drone k: parkir -> naik -> terbang keluar kota -> pulang -> mendarat
+    const ph = (t * 0.07 + k / 3) % 1, out = [[-260, -150], [220, -190], [-120, -240]][k];
+    let dx = 0, dy = 0, a = 1;
+    if (ph > 0.3 && ph < 0.45) dy = -((ph - 0.3) / 0.15) * 30;
+    else if (ph >= 0.45 && ph < 0.75) { const q = Math.sin(((ph - 0.45) / 0.3) * Math.PI); dx = out[0] * q; dy = -30 + out[1] * q; a = 1 - 0.85 * q; }
+    else if (ph >= 0.75 && ph < 0.9) dy = -(1 - (ph - 0.75) / 0.15) * 30;
+    else dy = Math.sin(t * 3 + k) * 0.8;
+    drawHubDrone(pc[0] + dx, pc[1] - 2 + dy, a, ph < 0.6);
+  }
+  const top = P(cx, cy, 110);
+  g.fillStyle = Math.sin(t * 4) > 0 ? "#ff4a5a" : "#c8102e"; g.fillRect(top[0] - 2, top[1] - 4, 4, 4); glow(top[0], top[1] - 2, 10, 10, "#ff4a5a", 0.5);
+  neonText("DRONE", top[0], top[1] - 14, "#35f2ff", 6, flick(57));
+}
 function drawCafe(x, y) {
   const c = P(x + 0.5, y + 0.5);
   if (propArt("cafe", x, y)) { glow(c[0], c[1] - 14, 18, 8, "#ffb547", 0.4); return; }
@@ -780,6 +823,7 @@ CAPS.forEach(([x, y], i) => {
 [[8, 13]].forEach(([x, y]) => add(x, y, x + 1, y + 1, () => drawBench(x, y)));
 add(6, 11, 8, 13, () => drawStatue(6, 11));
 add(13, 6, 14, 7, () => drawCafe(13, 6));
+add(DRONEHUB.x0, DRONEHUB.y0, DRONEHUB.x1, DRONEHUB.y1, () => drawDroneHub(DRONEHUB));
 // P5 props (tidak memblokir jalan kru; digambar di pojok tile dekat dinding)
 const P5PROPS = [[4, 12, drawBin], [4, 13, drawEBox], [12, 5, drawScooter], [14, 5, drawBin], [15, 2, drawEBox]];
 for (const [x, y, fn] of P5PROPS) add(x, y, x + 1, y + 1, () => { if (FX.p5) fn(x, y); }, false);
@@ -942,7 +986,8 @@ function think(a) {
     return goTo(a, sx, sy, () => { a.mode = "work"; a.face = f; });
   }
   if (a.status === "sleep") {
-    const ci = a.slot % CAPS.length, [cx, cy] = CAPS[ci];
+    if (a.slot >= CAPS.length) { const [dx, dy] = DOZE[(a.slot - CAPS.length) % DOZE.length]; return goTo(a, dx, dy, () => { a.mode = "doze"; }); }
+    const ci = a.slot, [cx, cy] = CAPS[ci];
     return goTo(a, cx, cy, () => { a.mode = "charge"; capUsed[ci] = true; });
   }
   const r = Math.random();
@@ -957,7 +1002,7 @@ function goTo(a, gx, gy, done) {
   if (!p.length) { done(); return; }
   a.path = p; a.done = done; a.mode = "walk";
 }
-function releaseSlot(a) { if (a.mode === "charge") capUsed[a.slot % CAPS.length] = false; }
+function releaseSlot(a) { if (a.mode === "charge" && a.slot < CAPS.length) capUsed[a.slot] = false; }
 function assign() {
   let w = 0, s = 0;
   counts.work = counts.idle = counts.sleep = 0;
@@ -991,7 +1036,7 @@ function update(a, dt) {
     return;
   }
   if (a.mode === "idle") { a.wait -= dt; if (a.wait <= 0) think(a); return; }
-  if ((a.mode === "work" && a.status !== "work") || (a.mode === "charge" && a.status !== "sleep")) { releaseSlot(a); a.mode = "idle"; a.wait = 0.2; }
+  if ((a.mode === "work" && a.status !== "work") || ((a.mode === "charge" || a.mode === "doze") && a.status !== "sleep")) { releaseSlot(a); a.mode = "idle"; a.wait = 0.2; }
 }
 function frameOf(a) {
   const s = a.anim.seq, T = a.anim.ticks, cyc = (arr, k) => arr[Math.floor(a.ft / k) % arr.length];
@@ -1007,6 +1052,7 @@ function frameOf(a) {
   }
   if (a.mode === "work") return [s.back[Math.floor(t * 2 + a.seed) % 2 ? 0 : 1] ?? s.back[0], a.face === "bl"];
   if (a.mode === "charge") return [s.idle[0], false];
+  if (a.mode === "doze") return [s.blink?.[0] ?? s.idle[0], a.seed > 0.5];
   const blink = (Math.floor(t * 10 + a.seed * 7) % 37) === 0;
   return [blink ? s.blink[0] : cyc(s.idle, T.idle), a.seed > 0.5];
 }
@@ -1033,7 +1079,7 @@ function drawAgent(a) {
   const [f, flip] = frameOf(a);
   const bob = a.mode === "charge" ? -5 + Math.sin(t * 2 + a.seed) * 1.5 : 0;
   g.save(); g.translate(Math.round(sx), Math.round(sy + bob)); if (flip) g.scale(-1, 1);
-  if (a.mode === "charge") g.globalAlpha = 0.85;
+  if (a.mode === "charge" || a.mode === "doze") g.globalAlpha = 0.85;
   const sh = sharpSheet(a.img, 0.5);
   g.imageSmoothingEnabled = true; g.imageSmoothingQuality = "high";
   g.drawImage(sh.c, f * 64 * sh.n, 0, 64 * sh.n, 96 * sh.n, -16, -47, 32, 48);
@@ -1495,6 +1541,7 @@ function render(dt) {
     cx.fillStyle = "rgba(7,5,26,.8)"; cx.fillRect(x - w / 2, y - 7, w, 13);
     cx.fillStyle = a.def.accent; cx.fillRect(x - w / 2, y + 5, w, 1);
     cx.fillStyle = "#fff"; cx.fillText(a.def.name, x, y);
+    if (a.mode === "doze") { cx.font = `10px "PS2P"`; cx.fillStyle = "#b9c6f2"; for (let k = 0; k < 3; k++) { const ph = (t * 0.5 + k / 3) % 1; cx.globalAlpha = 1 - ph; cx.fillText("z", x + 8 + ph * 10, y - 12 - ph * 18); } cx.globalAlpha = 1; }
     if (a.mode === "work" && Math.sin(t * 2 + a.seed * 9) > 0.2) { cx.font = `8px "PS2P"`; cx.fillStyle = "#5cf08a"; cx.shadowColor = "#5cf08a"; cx.shadowBlur = 8; cx.fillText(a.def.emotes?.work || "!", x, y - 16 - (t * 8 % 6)); cx.shadowBlur = 0; }
     if (a.say && a.say.until > t) {
       cx.font = `15px "Pixelify"`; const tw = Math.min(220, cx.measureText(a.say.text).width + 16);
@@ -1626,7 +1673,7 @@ const info = document.getElementById("info");
 let SEL = null;
 document.getElementById("infoX").onclick = () => { info.hidden = true; SEL = null; document.querySelectorAll(".crew li").forEach((l) => l.classList.remove("sel")); };
 const SLBL = { work: "KERJA", idle: "STANDBY", sleep: "OFFLINE" };
-const WHERE = (a) => (a.mode === "tpin" || a.mode === "tpout" ? "Lagi teleport…" : a.mode === "work" ? "Command Center markas" : a.mode === "charge" ? "Kapsul charge" : a.mode === "walk" ? (a.status === "work" ? "Jalan ke Command Center" : a.status === "sleep" ? "Jalan ke kapsul charge" : "Jalan-jalan di kota") : "Nongkrong di kota");
+const WHERE = (a) => (a.mode === "tpin" || a.mode === "tpout" ? "Lagi teleport…" : a.mode === "work" ? "Command Center markas" : a.mode === "charge" ? "Kapsul charge" : a.mode === "doze" ? "Tidur di markas, antre pod" : a.mode === "walk" ? (a.status === "work" ? "Jalan ke Command Center" : a.status === "sleep" ? "Jalan ke kapsul charge" : "Jalan-jalan di kota") : "Nongkrong di kota");
 function renderInfo(a) {
   const I = a.info || { label: SLBL[a.status], lastActive: null, summary: "", raw: "" };
   document.getElementById("infoBody").innerHTML = `<img src="assets/sprites/${a.id}_portrait.png" alt="Potret ${esc(a.def.name)}"><div><h3 style="color:${a.def.accent}">${esc(a.def.name)}</h3><p>${esc(a.def.title)} · <span class="c-${a.status}">${esc(I.label)}</span></p></div>
