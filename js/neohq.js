@@ -671,12 +671,31 @@ function chamberFront() {
   neonText("TELEPORT", c[0], top - 34, "#35f2ff", 6, 0.85 + 0.15 * Math.sin(t * 2));
 }
 // P5: prop jalanan kecil (tempat sampah, kotak listrik, skuter) di kaki gedung
-function drawBin(x, y) { box(x + 0.62, y + 0.15, x + 0.82, y + 0.35, 0, 12, "#4a4290", "#2d2860", "#221d4a", "rgba(155,140,255,.35)"); box(x + 0.6, y + 0.13, x + 0.84, y + 0.37, 12, 2, "#6a64a8", "#4a4490", "#38327a"); }
+/* P9: prop kota dari sprite sheet pixel art (3x3 sel 64x96, titik tengah tile di (32,80)); efek cahaya tetap dari kode */
+const PROP_CELL = { tree: 0, lamp: 1, cafe: 2, vendC: 3, vendM: 4, bench: 5, bin: 6, ebox: 7, scooter: 8 };
+const PROPS = { img: null };
+async function loadProps() {
+  const src = new Image(); src.src = "assets/props/city-props.png";
+  try { await src.decode(); } catch { return; }   // gagal load = prop prosedural
+  const c = document.createElement("canvas"); c.width = src.width * ART_UP; c.height = src.height * ART_UP;
+  const q = c.getContext("2d"); q.imageSmoothingEnabled = false; q.drawImage(src, 0, 0, c.width, c.height); PROPS.img = c;
+}
+function propArt(k, x, y, dx = 0, dy = 0) {
+  if (!PROPS.img) return false;
+  const n = PROP_CELL[k], p = P(x + 0.5 + dx, y + 0.5 + dy), U = ART_UP;
+  g.imageSmoothingEnabled = true; g.imageSmoothingQuality = "high";
+  g.drawImage(PROPS.img, (n % 3) * 64 * U, ((n / 3) | 0) * 96 * U, 64 * U, 96 * U, p[0] - 32, p[1] - 80, 64, 96);
+  g.imageSmoothingEnabled = false;
+  return true;
+}
+function drawBin(x, y) { if (propArt("bin", x, y, 0.22, -0.25)) return; box(x + 0.62, y + 0.15, x + 0.82, y + 0.35, 0, 12, "#4a4290", "#2d2860", "#221d4a", "rgba(155,140,255,.35)"); box(x + 0.6, y + 0.13, x + 0.84, y + 0.37, 12, 2, "#6a64a8", "#4a4490", "#38327a"); }
 function drawEBox(x, y) {
+  if (propArt("ebox", x, y, 0.275, -0.1)) return;
   box(x + 0.7, y + 0.2, x + 0.85, y + 0.6, 0, 24, "#3a3072", "#2a2357", "#1d1842", "rgba(155,140,255,.35)");
   face({ x0: x + 0.7, y0: y + 0.2, x1: x + 0.85, y1: y + 0.6 }, "R", 0, 0, () => { g.fillStyle = "#ffb547"; g.fillRect(3, -18, 5, 4); g.fillStyle = "#ff3ea5"; g.fillRect(8, -10, 4, 3); g.fillStyle = Math.sin(t * 4 + x) > 0 ? "#5cf08a" : "#1d4a3a"; g.fillRect(4, -22, 2, 1); });
 }
 function drawScooter(x, y) {
+  if (propArt("scooter", x, y, 0, 0.05)) return;
   const a = P(x + 0.3, y + 0.55, 3), c = P(x + 0.7, y + 0.55, 3);
   for (const w of [a, c]) { g.fillStyle = "#0e0b24"; g.beginPath(); g.ellipse(w[0], w[1], 3.5, 3.5, 0, 0, 7); g.fill(); g.strokeStyle = "#5b51a8"; g.lineWidth = 1; g.stroke(); }
   g.strokeStyle = "#ff3ea5"; g.lineWidth = 2.5; g.beginPath(); g.moveTo(a[0], a[1] - 3); g.lineTo(c[0] - 3, c[1] - 5); g.lineTo(c[0], c[1] - 16); g.stroke();
@@ -692,11 +711,12 @@ function drawLamp(x, y, col) {
     for (let k = 0; k < 6; k++) { const ph = (t * (0.08 + hash(x, y, k) * 0.06) + hash(k, x, y)) % 1, yy = hy + ph * (gy - hy), sp = 4 + ph * 22; g.fillStyle = shade(col, 1.3, 0.55 * (1 - ph)); g.fillRect(Math.round(hx + (hash(k, y) - 0.5) * 2 * sp), Math.round(yy), 1, 1); }
     g.restore();
   }
-  g.strokeStyle = "#3a3670"; g.lineWidth = 3; g.beginPath(); g.moveTo(...b); g.lineTo(...tp); g.lineTo(tp[0] + 14, tp[1] + 2); g.stroke();
+  if (!propArt("lamp", x, y)) { g.strokeStyle = "#3a3670"; g.lineWidth = 3; g.beginPath(); g.moveTo(...b); g.lineTo(...tp); g.lineTo(tp[0] + 14, tp[1] + 2); g.stroke(); }
   g.fillStyle = col; g.fillRect(tp[0] + 8, tp[1], 12, 4); glow(tp[0] + 14, tp[1] + 4, 18, 10, col, 0.8);
   glow(b[0] + 14, b[1] + 6, 56, 24, col, 0.2);
 }
 function drawVending(x, y, col) {
+  if (propArt(col === "#35f2ff" ? "vendC" : "vendM", x, y)) { const c = P(x + 0.4, y + 1); glow(c[0], c[1], 30, 12, col, 0.3); return; }
   box(x + 0.25, y + 0.3, x + 0.75, y + 0.7, 0, 34, "#3a3072", "#2a2357", "#1d1842", "rgba(255,255,255,.3)");
   face({ x0: x + 0.25, y0: y + 0.3, x1: x + 0.75, y1: y + 0.7 }, "L", 0, 0, () => {
     g.fillStyle = col; g.globalAlpha = 0.7 + 0.3 * Math.sin(t * 2 + x); g.fillRect(2, -30, 12, 22); g.globalAlpha = 1;
@@ -704,8 +724,9 @@ function drawVending(x, y, col) {
   });
   const c = P(x + 0.4, y + 1); glow(c[0], c[1], 30, 12, col, 0.3);
 }
-function drawBench(x, y) { box(x + 0.15, y + 0.3, x + 0.85, y + 0.7, 0, 8, "#4a4290", "#2d2860", "#221d4a"); box(x + 0.15, y + 0.3, x + 0.85, y + 0.38, 8, 10, "#5b51a8", "#3a3480", "#2a2560"); }
+function drawBench(x, y) { if (propArt("bench", x, y)) return; box(x + 0.15, y + 0.3, x + 0.85, y + 0.7, 0, 8, "#4a4290", "#2d2860", "#221d4a"); box(x + 0.15, y + 0.3, x + 0.85, y + 0.38, 8, 10, "#5b51a8", "#3a3480", "#2a2560"); }
 function drawTree(x, y) {
+  if (propArt("tree", x, y)) { const c = P(x + 0.5, y + 0.5, 10); glow(c[0], c[1] - 38, 30, 30, "#ff3ea5", 0.15); return; }
   box(x + 0.25, y + 0.25, x + 0.75, y + 0.75, 0, 10, "#3a3072", "#2a2357", "#1d1842", "#35f2ff");
   const c = P(x + 0.5, y + 0.5, 10);
   g.fillStyle = "#3b1f55"; g.fillRect(c[0] - 1, c[1] - 20, 3, 20);
@@ -728,6 +749,7 @@ function drawStatue(x, y) {
 }
 function drawCafe(x, y) {
   const c = P(x + 0.5, y + 0.5);
+  if (propArt("cafe", x, y)) { glow(c[0], c[1] - 14, 18, 8, "#ffb547", 0.4); return; }
   g.fillStyle = "#5b51a8"; g.fillRect(c[0] - 1, c[1] - 30, 2, 30);
   g.fillStyle = "#ffb547"; g.beginPath(); g.moveTo(c[0] - 22, c[1] - 26); g.lineTo(c[0], c[1] - 38); g.lineTo(c[0] + 22, c[1] - 26); g.closePath(); g.fill();
   g.fillStyle = "#2d2860"; g.beginPath(); g.ellipse(c[0], c[1] - 12, 12, 6, 0, 0, 7); g.fill();
@@ -1687,7 +1709,7 @@ async function boot() {
   addEventListener("resize", onResize);
   addEventListener("orientationchange", () => requestAnimationFrame(onResize));   // some mobile browsers report the new size a frame late
   try { await document.fonts.load('10px "PS2P"'); await document.fonts.load('15px "Pixelify"'); } catch {}
-  await loadWallArt();
+  await loadWallArt(); await loadProps();
   paintGround();
   const kairo = await fetch("assets/sprites/kairo.json").then((r) => r.json());
   await Promise.all(AGENTS.map(async (def, i) => {
