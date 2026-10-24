@@ -1,6 +1,6 @@
 {
-  "generatedAt": 1792822025131,
-  "generatedAtWIB": "2026-10-24 13:07 WIB",
+  "generatedAt": 1792825463438,
+  "generatedAtWIB": "2026-10-24 14:04 WIB",
   "source": "box-timestamps+summaries",
   "agents": {
     "nerd": {
@@ -14,7 +14,7 @@
     },
     "makelar": {
       "id": "4b9ac851-2160-48b6-9962-f4c9fa305133",
-      "status": "Online",
+      "status": "On mission",
       "lastActive": 1792821525892,
       "lastActiveWIB": "2026-10-24 12:58 WIB",
       "summary": "",
@@ -32,9 +32,9 @@
     },
     "sisotoy": {
       "id": "81d79561-02ac-4235-9729-52e0f6036254",
-      "status": "Standby",
-      "lastActive": 1792728072910,
-      "lastActiveWIB": "2026-10-23 11:01 WIB",
+      "status": "Online",
+      "lastActive": 1792825274203,
+      "lastActiveWIB": "2026-10-24 14:01 WIB",
       "summary": "",
       "routines": 0,
       "summarySource": null
