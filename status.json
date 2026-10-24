@@ -1,6 +1,6 @@
 {
-  "generatedAt": 1792836277463,
-  "generatedAtWIB": "2026-10-24 17:04 WIB",
+  "generatedAt": 1792839912470,
+  "generatedAtWIB": "2026-10-24 18:05 WIB",
   "source": "box-timestamps+summaries",
   "agents": {
     "nerd": {
@@ -23,7 +23,7 @@
     },
     "alcapone": {
       "id": "7bb34c58-76f3-4f59-ab4b-48d396e81e6e",
-      "status": "On mission",
+      "status": "Standby",
       "lastActive": 1792829845866,
       "lastActiveWIB": "2026-10-24 15:17 WIB",
       "summary": "",
