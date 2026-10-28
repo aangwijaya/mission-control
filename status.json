@@ -1,6 +1,6 @@
 {
-  "generatedAt": 1793181621833,
-  "generatedAtWIB": "2026-10-28 17:00 WIB",
+  "generatedAt": 1793193654774,
+  "generatedAtWIB": "2026-10-28 20:20 WIB",
   "source": "box-timestamps+summaries",
   "agents": {
     "nerd": {
@@ -32,9 +32,9 @@
     },
     "sisotoy": {
       "id": "81d79561-02ac-4235-9729-52e0f6036254",
-      "status": "Standby",
-      "lastActive": 1792964019207,
-      "lastActiveWIB": "2026-10-26 04:33 WIB",
+      "status": "On mission",
+      "lastActive": 1793187477899,
+      "lastActiveWIB": "2026-10-28 18:37 WIB",
       "summary": "",
       "routines": 0,
       "summarySource": null
