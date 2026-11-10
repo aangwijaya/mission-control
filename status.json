@@ -1,6 +1,6 @@
 {
-  "generatedAt": 1794273358705,
-  "generatedAtWIB": "2026-11-10 08:15 WIB",
+  "generatedAt": 1794316570610,
+  "generatedAtWIB": "2026-11-10 20:16 WIB",
   "source": "box-timestamps+summaries",
   "agents": {
     "nerd": {
@@ -51,8 +51,8 @@
     "kurir": {
       "id": "e805653f-bbc6-4384-8273-6250a277d2eb",
       "status": "Standby",
-      "lastActive": 1794127326828,
-      "lastActiveWIB": "2026-11-08 15:42 WIB",
+      "lastActive": 1794299614532,
+      "lastActiveWIB": "2026-11-10 15:33 WIB",
       "summary": "",
       "routines": 0,
       "summarySource": null
@@ -60,8 +60,8 @@
     "jack": {
       "id": "edbe6eb5-9a50-4dd1-8bf2-92fc4ee79f06",
       "status": "Standby",
-      "lastActive": 1794127341488,
-      "lastActiveWIB": "2026-11-08 15:42 WIB",
+      "lastActive": 1794240756763,
+      "lastActiveWIB": "2026-11-09 23:12 WIB",
       "summary": "",
       "routines": 0,
       "summarySource": null
